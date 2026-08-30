@@ -94,25 +94,20 @@ export async function renderUserDashboard(container) {
     <div class="user-dashboard-wrapper" style="background: #f8fafc; min-height: 80vh; padding: 2rem 0 4rem;">
       <div class="container" style="max-width: 1200px;">
         
-        <!-- Header Profile Banner -->
-        <div style="background: linear-gradient(135deg, #1e40af, #2874f0); border-radius: 16px; padding: 2rem; color: #fff; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; box-shadow: 0 10px 25px rgba(37,99,235,0.2);">
-          <div style="display: flex; align-items: center; gap: 1.25rem;">
-            <div style="width: 64px; height: 64px; background: #ffffff; color: #2874f0; font-size: 2rem; font-weight: 900; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-              ${(user.name || 'U').charAt(0).toUpperCase()}
-            </div>
+        <!-- Header Strip with Back Navigation & Continue Shopping -->
+        <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="#store" class="btn btn-outline-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px; padding: 0.5rem 1.1rem;">
+              ← Continue Shopping
+            </a>
             <div>
-              <h2 style="font-size: 1.6rem; font-weight: 800; margin: 0;">Welcome, ${user.name}!</h2>
-              <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.25rem;">
-                <span>📧 ${user.email}</span> • <span>📱 ${user.phone || 'No phone added'}</span> • <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-weight: 700;">Verified Customer</span>
-              </div>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">My Account & Orders</h2>
+              <span style="font-size: 0.82rem; color: #64748b;">${user.name} (${user.email})</span>
             </div>
           </div>
 
-          <div style="display: flex; gap: 1rem; align-items: center;">
-            <a href="#store" class="btn" style="background: #ffffff; color: #1e40af; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px;">
-              🛍️ Continue Shopping
-            </a>
-            <button type="button" id="btn-user-logout" class="btn" style="background: rgba(255,255,255,0.15); color: #fff; font-weight: 700; padding: 0.6rem 1.25rem; border-radius: 8px;">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <button type="button" id="btn-user-logout" class="btn btn-outline" style="color: #ef4444; border-color: #fca5a5; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem;">
               🚪 Logout
             </button>
           </div>

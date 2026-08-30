@@ -50,9 +50,6 @@ export function renderNavbar() {
               <a href="#admin?tab=returns" class="nav-link-btn" id="nav-admin-returns">
                 🔄 <span class="action-text">Returns</span>
               </a>
-              <a href="#store" class="nav-link-btn" id="nav-admin-preview-store" style="background: rgba(255,255,255,0.15); color: #fff;">
-                👁️ <span class="action-text">Customer Store</span>
-              </a>
               <button type="button" class="nav-link-btn btn-logout-owner" id="nav-logout-btn" style="background: #ef4444; color: #fff; font-weight: 700; padding: 0.45rem 1rem;">
                 🚪 Logout
               </button>

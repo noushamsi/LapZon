@@ -103,6 +103,14 @@
       "name": "Vikram Sundaram",
       "email": "cust_1788097677387@test.com",
       "password": "User@123"
+    },
+    {
+      "id": "usr-mtfv97e3-g6hp",
+      "role": "user",
+      "createdAt": "2026-08-30T13:49:48.075Z",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788097788048@test.com",
+      "password": "User@123"
     }
   ],
   "products": [
@@ -141,7 +149,7 @@
     {
       "id": "lap-mtfid2zo-dhhd",
       "rating": 5,
-      "reviewsCount": 1,
+      "reviewsCount": 2,
       "isBestSeller": false,
       "isDealOfTheDay": false,
       "tag": "New Arrival",
@@ -159,7 +167,7 @@
       "mrp": 349900,
       "price": 319900,
       "discount": 9,
-      "stock": 6,
+      "stock": 5,
       "inStock": true,
       "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
       "images": [
@@ -793,6 +801,98 @@
     }
   ],
   "orders": [
+    {
+      "orderId": "OD-LK-92364099",
+      "userId": "usr-mtfv97e3-g6hp",
+      "createdAt": "2026-08-30T13:49:48.384Z",
+      "customer": {
+        "id": "addr-1788097788100-418o",
+        "userId": "usr-mtfv97e3-g6hp",
+        "isDefault": true,
+        "createdAt": "2026-08-30T13:49:48.100Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788097788048@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtfid2zo-dhhd",
+          "name": "Apple MacBook Pro 16 M3 Max (10-Angle Showcase Edition)",
+          "price": 319900,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Apple M3 Max (16-Core CPU, 40-Core GPU)"
+        }
+      ],
+      "pricing": {
+        "itemsTotal": 319900,
+        "discount": 30000,
+        "delivery": 0,
+        "totalAmount": 289900
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Paid (Cash Collected)",
+      "status": "Delivered",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-49581889IN",
+        "currentLocation": "Bengaluru Express Hub",
+        "expectedDate": "2026-09-02",
+        "deliveredAt": "2026-08-30T13:49:48.580Z"
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-08-30T13:49:48.384Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-08-30T13:49:48.422Z",
+          "completed": true,
+          "note": "Order verified and confirmed by Store Administrator."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": "2026-08-30T13:49:48.455Z",
+          "completed": true,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": "2026-08-30T13:49:48.487Z",
+          "completed": true,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": "2026-08-30T13:49:48.519Z",
+          "completed": true,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": "2026-08-30T13:49:48.548Z",
+          "completed": true,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": "2026-08-30T13:49:48.580Z",
+          "completed": true,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ],
+      "returnStatus": "Approved",
+      "returnId": "RET-1788097788673-1ehz"
+    },
     {
       "orderId": "OD-LK-10180467",
       "userId": "usr-mtfv6u0m-lndz",
@@ -3740,6 +3840,20 @@
   ],
   "addresses": [
     {
+      "id": "addr-1788097788100-418o",
+      "userId": "usr-mtfv97e3-g6hp",
+      "isDefault": true,
+      "createdAt": "2026-08-30T13:49:48.100Z",
+      "fullName": "Vikram Sundaram",
+      "phone": "9876543210",
+      "houseNo": "Villa 14, Palm Meadows",
+      "street": "Whitefield Main Road",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560066",
+      "addressType": "Home"
+    },
+    {
       "id": "addr-1788097677453-d6l7",
       "userId": "usr-mtfv6u0m-lndz",
       "isDefault": true,
@@ -3938,9 +4052,25 @@
     ],
     "usr-mtfv6u0m-lndz": [
       "lap-mtfid2zo-dhhd"
+    ],
+    "usr-mtfv97e3-g6hp": [
+      "lap-mtfid2zo-dhhd"
     ]
   },
   "reviews": [
+    {
+      "id": "rev-1788097788646-rdhk",
+      "userId": "usr-mtfv97e3-g6hp",
+      "userName": "Vikram Sundaram",
+      "productId": "lap-mtfid2zo-dhhd",
+      "rating": 5,
+      "title": "Sensational Laptop!",
+      "comment": "High refresh rate screen, super fast boot, and seamless Cash on Delivery experience.",
+      "reviewImage": null,
+      "isVerifiedPurchase": true,
+      "status": "approved",
+      "createdAt": "2026-08-30T13:49:48.646Z"
+    },
     {
       "id": "rev-1788097677994-3jxc",
       "userId": "usr-mtfv6u0m-lndz",
@@ -4034,6 +4164,44 @@
     }
   ],
   "returns": [
+    {
+      "id": "RET-1788097788673-1ehz",
+      "orderId": "OD-LK-92364099",
+      "userId": "usr-mtfv97e3-g6hp",
+      "customer": {
+        "id": "addr-1788097788100-418o",
+        "userId": "usr-mtfv97e3-g6hp",
+        "isDefault": true,
+        "createdAt": "2026-08-30T13:49:48.100Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788097788048@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtfid2zo-dhhd",
+          "name": "Apple MacBook Pro 16 M3 Max (10-Angle Showcase Edition)",
+          "price": 319900,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Apple M3 Max (16-Core CPU, 40-Core GPU)"
+        }
+      ],
+      "type": "Replacement",
+      "reason": "Minor display tint issue",
+      "description": "Customer requested 7-day doorstep replacement unit.",
+      "images": [],
+      "status": "Approved",
+      "createdAt": "2026-08-30T13:49:48.673Z",
+      "updatedAt": "2026-08-30T13:49:48.708Z",
+      "adminNotes": "Pickup scheduled via Ekart Express"
+    },
     {
       "id": "RET-1788097678020-l47d",
       "orderId": "OD-LK-10180467",
@@ -4300,6 +4468,19 @@
     }
   ],
   "supportTickets": [
+    {
+      "id": "TCK-1788097788735-w4tq",
+      "userId": "usr-mtfv97e3-g6hp",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788097788048@test.com",
+      "orderId": null,
+      "subject": "Warranty registration inquiry",
+      "message": "How do I register the 1-year onsite brand warranty?",
+      "status": "Resolved",
+      "reply": "Your warranty is automatically active with the invoice in My Orders!",
+      "createdAt": "2026-08-30T13:49:48.735Z",
+      "updatedAt": "2026-08-30T13:49:48.770Z"
+    },
     {
       "id": "TCK-1788097678083-seei",
       "userId": "usr-mtfv6u0m-lndz",

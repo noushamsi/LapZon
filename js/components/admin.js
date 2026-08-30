@@ -136,9 +136,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
               <button type="button" class="btn btn-outline" id="btn-reset-demo" style="color: #fff; border-color: rgba(255,255,255,0.3);" title="Reset initial sample data">
                 🔄 Reset Demo Data
               </button>
-              <a href="#store" class="btn btn-orange">
-                👁️ View Customer Store
-              </a>
             </div>
           </div>
 
