@@ -172,14 +172,69 @@ app.get('/api/orders/:orderId', (req, res) => {
   return res.json({ success: true, order });
 });
 
-// Get user order history
-app.get('/api/orders', optionalAuth, (req, res) => {
-  const allOrders = db.getOrders();
-  if (req.user && req.user.id) {
-    const userOrders = allOrders.filter(o => o.userId === req.user.id || (o.customer && o.customer.phone === req.user.phone));
-    return res.json({ success: true, orders: userOrders.length > 0 ? userOrders : allOrders });
+// Cancel order by customer (Allowed only before shipping)
+app.put('/api/orders/:orderId/cancel', optionalAuth, (req, res) => {
+  const { reason } = req.body;
+  const result = db.cancelOrder(req.params.orderId, 'user', reason);
+  if (!result.success) {
+    return res.status(400).json({ success: false, error: result.error });
   }
-  return res.json({ success: true, orders: allOrders });
+  return res.json({
+    success: true,
+    message: 'Order cancelled successfully. Restored inventory units.',
+    order: result.order
+  });
+});
+
+// Referral: Register new referral join
+app.post('/api/referrals/register', (req, res) => {
+  const { referrerCode, name, email } = req.body;
+  if (!referrerCode) {
+    return res.status(400).json({ success: false, error: 'Referrer code is required.' });
+  }
+
+  const result = db.registerReferral(referrerCode, { name, email });
+  return res.json({
+    success: true,
+    message: 'Referral recorded.',
+    refInfo: result.refInfo,
+    milestoneReached: result.milestoneReached,
+    couponCode: result.couponCode
+  });
+});
+
+// Referral: Get referral progress and unlocked coupons
+app.get('/api/referrals/status/:code', (req, res) => {
+  const refInfo = db.getReferralData(req.params.code);
+  return res.json({ success: true, refInfo });
+});
+
+// Coupon: Validate 30% OFF referral coupon
+app.post('/api/coupons/validate', (req, res) => {
+  const { code, cartTotal } = req.body;
+  if (!code) {
+    return res.status(400).json({ success: false, error: 'Coupon code is required.' });
+  }
+
+  const result = db.validateCoupon(code, Number(cartTotal) || 0);
+  if (!result.valid) {
+    return res.status(400).json({ success: false, error: result.error });
+  }
+
+  return res.json({
+    success: true,
+    message: '30% OFF referral coupon applied successfully! 🎉',
+    coupon: result
+  });
+});
+
+// Coupon: Mark coupon as used after order completion
+app.post('/api/coupons/apply', (req, res) => {
+  const { code, orderId } = req.body;
+  if (code) {
+    db.markCouponUsed(code, orderId);
+  }
+  return res.json({ success: true });
 });
 
 // ==========================================================================
@@ -323,6 +378,35 @@ app.get('/api/admin/orders', requireAdmin, (req, res) => {
     success: true,
     count: orders.length,
     orders
+  });
+});
+
+// Admin: Confirm Order (Waiting for Admin Confirmation -> Order Confirmed)
+app.put('/api/admin/orders/:orderId/confirm', requireAdmin, (req, res) => {
+  const confirmedOrder = db.confirmOrder(req.params.orderId);
+  if (!confirmedOrder) {
+    return res.status(404).json({ success: false, error: 'Order not found.' });
+  }
+
+  return res.json({
+    success: true,
+    message: `Order #${confirmedOrder.orderId} confirmed successfully by Admin!`,
+    order: confirmedOrder
+  });
+});
+
+// Admin: Cancel / Reject Order
+app.put('/api/admin/orders/:orderId/cancel', requireAdmin, (req, res) => {
+  const { reason } = req.body;
+  const result = db.cancelOrder(req.params.orderId, 'admin', reason || 'Order rejected by Admin.');
+  if (!result.success) {
+    return res.status(400).json({ success: false, error: result.error });
+  }
+
+  return res.json({
+    success: true,
+    message: `Order #${req.params.orderId} cancelled/rejected by Admin. Restored inventory stock.`,
+    order: result.order
   });
 });
 

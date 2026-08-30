@@ -33,6 +33,28 @@ class Router {
     // Scroll to top smoothly on route navigation
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    // Track referral query param if present
+    if (paramsObj.ref) {
+      const refCode = paramsObj.ref.trim();
+      const currentUser = auth.getUser();
+      const currentRef = currentUser ? currentUser.referralCode : null;
+      if (refCode && refCode !== currentRef && !sessionStorage.getItem(`ref_tracked_${refCode}`)) {
+        sessionStorage.setItem(`ref_tracked_${refCode}`, '1');
+        import('./services/api.js').then(({ api }) => {
+          api.registerReferral(refCode, {
+            name: currentUser?.name || 'New LapKart Visitor',
+            email: currentUser?.email || `visitor_${Math.random().toString(36).substring(2, 7)}@lapkart.com`
+          }).then(res => {
+            if (res && res.milestoneReached) {
+              import('./app.js').then(({ showToast }) => {
+                showToast(`🎉 5 Referrals Milestone Reached! 30% OFF Coupon Generated: ${res.couponCode}`, 'success');
+              });
+            }
+          }).catch(() => {});
+        });
+      }
+    }
+
     // Route matching with RBAC Guard
     if (pathPart === 'welcome' || pathPart === '') {
       renderWelcomePage(this.mainContainer);

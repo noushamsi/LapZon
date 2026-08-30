@@ -8,7 +8,7 @@ import { api } from '../services/api.js';
 import { LAPTOP_PRESET_IMAGES } from '../data.js';
 import { showToast } from '../app.js';
 
-const ORDER_STAGES = ["Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
+const ORDER_STAGES = ["Waiting for Admin Confirmation", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
 
 export async function renderAdminDashboard(container, queryParams = {}) {
   let activeTab = queryParams.tab || 'orders'; // 'orders' | 'inventory' | 'drafts' | 'add-product'
@@ -264,13 +264,31 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             </div>
                           </td>
 
-                          <!-- 6. Status Selector -->
+                          <!-- 6. Status Selector / Action -->
                           <td>
-                            <select class="tbl-status-select ${statusClass} order-status-select" data-id="${order.orderId}">
-                              ${ORDER_STAGES.map(st => `
-                                <option value="${st}" ${order.status === st ? 'selected' : ''}>${st}</option>
-                              `).join('')}
-                            </select>
+                            ${order.status === 'Waiting for Admin Confirmation' ? `
+                              <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <span class="badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-size: 0.75rem; padding: 3px 6px;">
+                                  ⏳ Pending Confirmation
+                                </span>
+                                <button type="button" class="btn btn-sm btn-green btn-admin-confirm" data-id="${order.orderId}">
+                                  ✓ Confirm Order
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline btn-admin-reject" data-id="${order.orderId}" style="color: var(--accent-red); border-color: rgba(239,68,68,0.4);">
+                                  ✕ Reject Order
+                                </button>
+                              </div>
+                            ` : (order.status.startsWith('Cancelled') ? `
+                              <span class="badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;">
+                                ✕ ${order.status}
+                              </span>
+                            ` : `
+                              <select class="tbl-status-select ${statusClass} order-status-select" data-id="${order.orderId}">
+                                ${ORDER_STAGES.filter(st => st !== 'Waiting for Admin Confirmation').map(st => `
+                                  <option value="${st}" ${order.status === st ? 'selected' : ''}>${st}</option>
+                                `).join('')}
+                              </select>
+                            `)}
                           </td>
 
                           <!-- 7. Delivery Details & Quick Delivered Action -->
@@ -879,7 +897,37 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 7. Order Status Dropdown Change
+    // 7a. Admin Confirm Order
+    container.querySelectorAll('.btn-admin-confirm').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orderId = btn.dataset.id;
+        try {
+          const res = await api.confirmAdminOrder(orderId);
+          showToast(res.message, 'success');
+          loadAdminData();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    });
+
+    // 7b. Admin Reject / Cancel Order
+    container.querySelectorAll('.btn-admin-reject').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orderId = btn.dataset.id;
+        if (confirm(`Reject and cancel order #${orderId}? This will restore laptop stock to inventory.`)) {
+          try {
+            const res = await api.cancelAdminOrder(orderId, 'Rejected by Admin');
+            showToast(res.message, 'info');
+            loadAdminData();
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    });
+
+    // 7c. Order Status Dropdown Change
     container.querySelectorAll('.order-status-select').forEach(sel => {
       sel.addEventListener('change', async (e) => {
         const orderId = sel.dataset.id;

@@ -725,9 +725,9 @@ class JsonDb {
       customer,
       items,
       pricing,
-      paymentMethod,
-      paymentStatus: paymentMethod.toLowerCase().includes('cash on delivery') ? 'Pending (COD)' : 'Paid',
-      status: 'Confirmed',
+      paymentMethod: paymentMethod || 'Cash on Delivery',
+      paymentStatus: 'Pending (Cash on Delivery)',
+      status: 'Waiting for Admin Confirmation',
       deliveryDetails: {
         courierPartner: 'Ekart Express Logistics',
         trackingNumber: `EK-EXP-${Math.floor(10000000 + Math.random() * 90000000)}IN`,
@@ -737,51 +737,58 @@ class JsonDb {
       },
       timeline: [
         {
-          stage: "Order Confirmed",
+          stage: "Order Placed",
           timestamp: now.toISOString(),
           completed: true,
-          note: `Order placed successfully with payment mode: ${paymentMethod}.`
+          note: "Order placed successfully. Waiting for store administrator approval."
         },
         {
-          stage: "Product Packed",
+          stage: "Order Confirmed",
           timestamp: null,
           completed: false,
-          note: "Item verification and anti-static packaging scheduled."
+          note: "Admin approval and inventory reservation pending."
+        },
+        {
+          stage: "Packed",
+          timestamp: null,
+          completed: false,
+          note: "Anti-static bubble packaging and seal inspection."
         },
         {
           stage: "Shipped",
           timestamp: null,
           completed: false,
-          note: "Courier logistics assignment pending."
+          note: "Handover to Ekart Express Courier partner."
         },
         {
           stage: "In Transit",
           timestamp: null,
           completed: false,
-          note: "Express transit to destination sorting hub."
+          note: "Highway air cargo express to destination hub."
         },
         {
           stage: "Out for Delivery",
           timestamp: null,
           completed: false,
-          note: "Local delivery hub dispatch."
+          note: "Delivery agent assigned with OTP verification."
         },
         {
           stage: "Delivered",
           timestamp: null,
           completed: false,
-          note: "Handover to recipient."
+          note: "Handover to customer with cash collection & open-box verification."
         }
       ]
     };
 
+    if (!db.orders) db.orders = [];
     db.orders.unshift(newOrder);
 
     // Deduct stock for each item
     items.forEach(item => {
       const prod = db.products.find(p => p.id === item.id);
       if (prod) {
-        prod.stock = Math.max(0, prod.stock - item.quantity);
+        prod.stock = Math.max(0, (prod.stock || 10) - item.quantity);
         if (prod.stock === 0) prod.inStock = false;
       }
     });
@@ -790,8 +797,79 @@ class JsonDb {
     return newOrder;
   }
 
+  confirmOrder(orderId) {
+    const db = this.readDb();
+    const order = db.orders.find(o => o.orderId === orderId);
+
+    if (!order) return null;
+
+    order.status = 'Order Confirmed';
+    const now = new Date().toISOString();
+
+    if (order.timeline) {
+      const confStage = order.timeline.find(t => t.stage === 'Order Confirmed');
+      if (confStage) {
+        confStage.completed = true;
+        confStage.timestamp = now;
+        confStage.note = 'Order verified and confirmed by Store Administrator.';
+      }
+    }
+
+    this.writeDb(db);
+    return order;
+  }
+
+  cancelOrder(orderId, cancelledBy = 'user', reason = '') {
+    const db = this.readDb();
+    const order = db.orders.find(o => o.orderId === orderId);
+
+    if (!order) {
+      return { success: false, error: 'Order not found.' };
+    }
+
+    // Cancellation eligibility rule: Can only cancel before shipping
+    const nonCancellableStages = ['Shipped', 'In Transit', 'Out for Delivery', 'Delivered'];
+    if (nonCancellableStages.includes(order.status)) {
+      return {
+        success: false,
+        error: `Order cannot be cancelled because it is already "${order.status}". Cancellation is allowed only before dispatch.`
+      };
+    }
+
+    if (order.status.startsWith('Cancelled')) {
+      return { success: false, error: 'This order is already cancelled.' };
+    }
+
+    order.status = cancelledBy === 'admin' ? 'Cancelled by Admin' : 'Cancelled by User';
+    order.cancellationReason = reason || `Order cancelled by ${cancelledBy}.`;
+    const now = new Date().toISOString();
+
+    if (order.timeline) {
+      order.timeline.push({
+        stage: "Order Cancelled",
+        timestamp: now,
+        completed: true,
+        note: `Order cancelled by ${cancelledBy}. ${reason}`
+      });
+    }
+
+    // Restore laptop stock back to inventory
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach(item => {
+        const prod = db.products.find(p => p.id === item.id);
+        if (prod) {
+          prod.stock = (prod.stock || 0) + item.quantity;
+          prod.inStock = prod.stock > 0;
+        }
+      });
+    }
+
+    this.writeDb(db);
+    return { success: true, order };
+  }
+
   updateOrderStatus(orderId, nextStatus, customDetails = {}) {
-    const STAGES = ["Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
+    const STAGES = ["Order Placed", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
     const db = this.readDb();
     const order = db.orders.find(o => o.orderId === orderId);
 
@@ -807,26 +885,142 @@ class JsonDb {
 
     if (nextStatus === "Delivered") {
       order.deliveryDetails.deliveredAt = now;
-      order.paymentStatus = "Paid";
+      order.paymentStatus = "Paid (Cash Collected)";
     }
 
     const currentStageIndex = STAGES.indexOf(nextStatus);
 
-    order.timeline = order.timeline.map((item, idx) => {
-      const isPastOrCurrent = idx <= currentStageIndex;
-      let timestamp = item.timestamp;
-      if (isPastOrCurrent && !timestamp) {
-        timestamp = now;
-      }
-      return {
-        ...item,
-        completed: isPastOrCurrent,
-        timestamp: isPastOrCurrent ? timestamp : null
-      };
-    });
+    if (order.timeline) {
+      order.timeline = order.timeline.map((item) => {
+        const idx = STAGES.indexOf(item.stage);
+        if (idx === -1) return item;
+        const isPastOrCurrent = idx <= currentStageIndex;
+        let timestamp = item.timestamp;
+        if (isPastOrCurrent && !timestamp) {
+          timestamp = now;
+        }
+        return {
+          ...item,
+          completed: isPastOrCurrent,
+          timestamp: isPastOrCurrent ? timestamp : null
+        };
+      });
+    }
 
     this.writeDb(db);
     return order;
+  }
+
+  // --- REFERRALS & 30% COUPONS ---
+  getReferralData(userIdOrCode) {
+    const db = this.readDb();
+    if (!db.referrals) db.referrals = {};
+    if (!db.coupons) db.coupons = [];
+
+    const refInfo = db.referrals[userIdOrCode] || { count: 0, referredUsers: [], unlockedCoupon: null };
+    return refInfo;
+  }
+
+  registerReferral(referrerCode, newUserInfo) {
+    const db = this.readDb();
+    if (!db.referrals) db.referrals = {};
+    if (!db.coupons) db.coupons = [];
+
+    if (!referrerCode) return { success: false, error: 'Referrer code is required' };
+
+    let refInfo = db.referrals[referrerCode];
+    if (!refInfo) {
+      refInfo = { count: 0, referredUsers: [], unlockedCoupon: null };
+      db.referrals[referrerCode] = refInfo;
+    }
+
+    // Check if new user is already referred
+    const email = newUserInfo.email || newUserInfo.id || 'guest';
+    const alreadyReferred = refInfo.referredUsers.some(u => u.email === email);
+    if (alreadyReferred) {
+      return { success: false, message: 'User already counted for this referral code.', refInfo };
+    }
+
+    if (refInfo.count < 5) {
+      refInfo.count += 1;
+      refInfo.referredUsers.push({
+        name: newUserInfo.name || 'New Friend',
+        email: email,
+        joinedAt: new Date().toISOString()
+      });
+
+      // If milestone 5 is reached, generate 30% OFF Coupon
+      if (refInfo.count === 5 && !refInfo.unlockedCoupon) {
+        const randomCode = `LAP30-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+
+        const coupon = {
+          code: randomCode,
+          discountPercent: 30,
+          ownerReferralCode: referrerCode,
+          createdAt: new Date().toISOString(),
+          validUntil: expiryDate.toISOString(),
+          isUsed: false,
+          usedInOrder: null
+        };
+
+        refInfo.unlockedCoupon = coupon;
+        db.coupons.push(coupon);
+      }
+    }
+
+    this.writeDb(db);
+    return { 
+      success: true, 
+      refInfo, 
+      milestoneReached: refInfo.count >= 5 && Boolean(refInfo.unlockedCoupon), 
+      couponCode: refInfo.unlockedCoupon?.code || null 
+    };
+  }
+
+  validateCoupon(code, orderTotal) {
+    const db = this.readDb();
+    if (!db.coupons) db.coupons = [];
+
+    const coupon = db.coupons.find(c => c.code.toUpperCase() === code.trim().toUpperCase());
+    if (!coupon) {
+      return { valid: false, error: 'Invalid coupon code.' };
+    }
+
+    if (coupon.isUsed) {
+      return { valid: false, error: 'This coupon has already been redeemed and can only be used once.' };
+    }
+
+    const now = new Date();
+    if (coupon.validUntil && new Date(coupon.validUntil) < now) {
+      return { valid: false, error: 'This 30% OFF referral coupon has expired.' };
+    }
+
+    const discountAmount = Math.round((orderTotal * coupon.discountPercent) / 100);
+
+    return {
+      valid: true,
+      couponCode: coupon.code,
+      discountPercent: coupon.discountPercent,
+      discountAmount,
+      validUntil: coupon.validUntil
+    };
+  }
+
+  markCouponUsed(code, orderId) {
+    const db = this.readDb();
+    if (!db.coupons) return false;
+
+    const coupon = db.coupons.find(c => c.code.toUpperCase() === code.trim().toUpperCase());
+    if (coupon) {
+      coupon.isUsed = true;
+      coupon.usedInOrder = orderId;
+      coupon.usedAt = new Date().toISOString();
+      this.writeDb(db);
+      return true;
+    }
+    return false;
   }
 
   resetDatabase() {

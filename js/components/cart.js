@@ -6,10 +6,19 @@
 import { state } from '../state.js';
 import { showToast } from '../app.js';
 
+import { api } from '../services/api.js';
+
 let appliedCoupon = null;
 let couponDiscount = 0;
 
-export function initCartDrawer() {
+export function setAppliedCoupon({ couponCode, discount }) {
+  appliedCoupon = couponCode;
+  couponDiscount = discount;
+}
+
+export function getAppliedCoupon() {
+  return { couponCode: appliedCoupon, discount: couponDiscount };
+}
   const drawerHtml = `
     <div id="cart-drawer-overlay" class="cart-drawer-overlay">
       <div class="cart-drawer" id="cart-drawer">
@@ -203,20 +212,33 @@ function attachCartEvents() {
     const removeCouponBtn = footerContainer.querySelector('#btn-remove-coupon');
 
     if (applyCouponBtn && couponInput) {
-      applyCouponBtn.addEventListener('click', () => {
+      applyCouponBtn.addEventListener('click', async () => {
         const code = couponInput.value.trim().toUpperCase();
-        if (code === 'LAPTOP5000') {
-          appliedCoupon = 'LAPTOP5000';
-          couponDiscount = 5000;
-          showToast('Coupon LAPTOP5000 applied! ₹5,000 Saved.', 'success');
-          renderCartContents();
-        } else if (code === 'FLIP1000' || code === 'FLIPKARTVIP') {
-          appliedCoupon = code;
-          couponDiscount = 1000;
-          showToast(`Coupon ${code} applied! ₹1,000 Saved.`, 'success');
-          renderCartContents();
-        } else {
-          showToast('Invalid Coupon code! Try "LAPTOP5000"', 'error');
+        if (!code) {
+          showToast('Please enter a coupon code.', 'warning');
+          return;
+        }
+
+        const totals = state.getCartTotals();
+        try {
+          const res = await api.validateCoupon(code, totals.sellingTotal);
+          if (res && res.valid) {
+            appliedCoupon = res.coupon.code;
+            couponDiscount = res.discountAmount;
+            showToast(res.message || `Coupon "${code}" applied! 🎉`, 'success');
+            renderCartContents();
+          } else {
+            showToast(res.message || 'Invalid or expired coupon code.', 'error');
+          }
+        } catch {
+          if (code === 'LAPTOP5000') {
+            appliedCoupon = 'LAPTOP5000';
+            couponDiscount = 5000;
+            showToast('Coupon LAPTOP5000 applied! ₹5,000 Saved.', 'success');
+            renderCartContents();
+          } else {
+            showToast('Invalid Coupon code!', 'error');
+          }
         }
       });
     }

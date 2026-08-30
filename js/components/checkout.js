@@ -1,7 +1,7 @@
 /**
- * Checkout Component - Address Details, Payment Methods & Order Confirmation
- * Strict Indian validation (PIN code, Phone), payment channels (GPay, PhonePe, COD with Captcha),
- * and backend order persistence.
+ * Checkout Component - Address Details, Cash on Delivery Payment & Order Placement
+ * Strict Indian validation (PIN code, 10-digit Phone), Cash on Delivery ONLY,
+ * and initial status: "Waiting for Admin Confirmation".
  */
 
 import { api } from '../services/api.js';
@@ -20,7 +20,7 @@ export function renderCheckoutAddress(container) {
   const { discount: couponDiscount } = getAppliedCoupon();
   const totals = state.getCartTotals(couponDiscount);
   const addresses = state.getAddresses();
-  let activeAddress = state.getActiveAddress() || (addresses.length > 0 ? addresses[0] : null);
+  let activeAddress = state.getActiveAddress();
   let showNewForm = addresses.length === 0;
 
   function formatPrice(val) {
@@ -39,12 +39,12 @@ export function renderCheckoutAddress(container) {
           <div class="step-divider"></div>
           <div class="step-node">
             <span class="step-num">2</span>
-            <span>Payment Method</span>
+            <span>Order Review & Payment</span>
           </div>
           <div class="step-divider"></div>
           <div class="step-node">
             <span class="step-num">3</span>
-            <span>Order Confirmed</span>
+            <span>Order Placed</span>
           </div>
         </div>
 
@@ -53,10 +53,10 @@ export function renderCheckoutAddress(container) {
           <div class="checkout-main-content">
             <div class="checkout-card">
               <div class="checkout-card-header">
-                <h3>📍 1. Select Delivery Address</h3>
+                <h3>📍 1. Delivery Address</h3>
                 ${addresses.length > 0 ? `
                   <button type="button" class="btn btn-sm btn-outline" id="btn-toggle-new-addr" style="color: #fff; border-color: rgba(255,255,255,0.4);">
-                    ${showNewForm ? 'Use Saved Address' : '+ Add New Address'}
+                    ${showNewForm ? 'Use Saved Address' : '+ Add Different Address'}
                   </button>
                 ` : ''}
               </div>
@@ -78,7 +78,7 @@ export function renderCheckoutAddress(container) {
                           </p>
                           ${activeAddress && activeAddress.id === addr.id ? `
                             <button type="button" class="btn btn-orange btn-deliver-here" id="btn-deliver-saved">
-                              Deliver Here & Proceed to Payment ➔
+                              Deliver to this Address & Review Order ➔
                             </button>
                           ` : ''}
                         </div>
@@ -90,7 +90,7 @@ export function renderCheckoutAddress(container) {
                 <!-- Address Input Form -->
                 <div id="new-address-form-wrap" style="${!showNewForm && addresses.length > 0 ? 'display: none;' : 'display: block;'}">
                   <h4 style="margin-bottom: 1.25rem; font-size: 1rem; color: var(--text-main); font-weight: 700;">
-                    ${addresses.length > 0 ? 'Enter New Delivery Address' : 'Enter Your Delivery Address'}
+                    Enter Complete Delivery Address
                   </h4>
                   
                   <form id="address-details-form" class="address-form-grid" novalidate>
@@ -110,7 +110,7 @@ export function renderCheckoutAddress(container) {
 
                     <!-- Flat / House No -->
                     <div class="form-group">
-                      <label for="addr-house">Flat / House No. / Building <span class="req">*</span></label>
+                      <label for="addr-house">House / Flat / Building No. <span class="req">*</span></label>
                       <input type="text" id="addr-house" placeholder="e.g. Flat 402, Lotus Residency" required />
                       <span class="form-error-msg" id="err-house"></span>
                     </div>
@@ -120,13 +120,6 @@ export function renderCheckoutAddress(container) {
                       <label for="addr-street">Street / Area / Locality <span class="req">*</span></label>
                       <input type="text" id="addr-street" placeholder="e.g. 100 Feet Road, Indiranagar" required />
                       <span class="form-error-msg" id="err-street"></span>
-                    </div>
-
-                    <!-- PIN Code -->
-                    <div class="form-group">
-                      <label for="addr-pincode">PIN Code (6 Digits) <span class="req">*</span></label>
-                      <input type="text" id="addr-pincode" placeholder="e.g. 560038" maxlength="6" required />
-                      <span class="form-error-msg" id="err-pincode"></span>
                     </div>
 
                     <!-- City -->
@@ -150,6 +143,13 @@ export function renderCheckoutAddress(container) {
                       <span class="form-error-msg" id="err-state"></span>
                     </div>
 
+                    <!-- PIN Code -->
+                    <div class="form-group">
+                      <label for="addr-pincode">PIN Code (6 Digits) <span class="req">*</span></label>
+                      <input type="text" id="addr-pincode" placeholder="e.g. 560038" maxlength="6" required />
+                      <span class="form-error-msg" id="err-pincode"></span>
+                    </div>
+
                     <!-- Address Type -->
                     <div class="form-group">
                       <label>Address Type</label>
@@ -167,7 +167,7 @@ export function renderCheckoutAddress(container) {
 
                     <div class="form-group full-width" style="margin-top: 1rem;">
                       <button type="submit" class="btn btn-orange btn-lg btn-block" id="btn-save-and-proceed">
-                        Save Address & Proceed to Payment ➔
+                        Save Address & Review Order ➔
                       </button>
                     </div>
                   </form>
@@ -190,7 +190,7 @@ export function renderCheckoutAddress(container) {
               </div>
               ${couponDiscount > 0 ? `
                 <div class="price-row discount-row">
-                  <span>Coupon Discount</span>
+                  <span>Referral Coupon (30% OFF)</span>
                   <span>-${formatPrice(couponDiscount)}</span>
                 </div>
               ` : ''}
@@ -203,10 +203,10 @@ export function renderCheckoutAddress(container) {
                 <span>${formatPrice(totals.totalPayable)}</span>
               </div>
               <div class="savings-highlight">
-                🎉 You will save ${formatPrice(totals.totalDiscount)} on this laptop order
+                🎉 Total Savings: ${formatPrice(totals.totalDiscount)}
               </div>
               <div class="trust-badge-mini">
-                <span>🛡️ Safe and Secure Payments. 100% Authentic Laptops.</span>
+                <span>🛡️ Safe Cash on Delivery • 100% Authentic Laptops</span>
               </div>
             </div>
           </aside>
@@ -230,7 +230,7 @@ function attachAddressEvents(container) {
       const isHidden = newFormWrap.style.display === 'none';
       newFormWrap.style.display = isHidden ? 'block' : 'none';
       savedAddrsList.style.display = isHidden ? 'none' : 'flex';
-      toggleNewBtn.textContent = isHidden ? 'Use Saved Address' : '+ Add New Address';
+      toggleNewBtn.textContent = isHidden ? 'Use Saved Address' : '+ Add Different Address';
     });
   }
 
@@ -272,45 +272,48 @@ function attachAddressEvents(container) {
       const stateVal = form.querySelector('#addr-state').value;
       const addressType = form.querySelector('input[name="address_type"]:checked')?.value || 'Home';
 
-      // Validation
+      // Strict Validation
       if (!fullName) {
-        setFieldError('fullname', 'Please enter your full name');
+        setFieldError('fullname', 'Please enter your Full Name');
         isValid = false;
       } else clearFieldError('fullname');
 
       if (!phone || !/^\d{10}$/.test(phone)) {
-        setFieldError('phone', 'Please enter a valid 10-digit mobile number');
+        setFieldError('phone', 'Please enter a valid 10-digit Mobile Number');
         isValid = false;
       } else clearFieldError('phone');
 
       if (!houseNo) {
-        setFieldError('house', 'Please enter house / flat details');
+        setFieldError('house', 'Please enter House / Flat Number');
         isValid = false;
       } else clearFieldError('house');
 
       if (!street) {
-        setFieldError('street', 'Please enter street / locality details');
+        setFieldError('street', 'Please enter Street / Area details');
         isValid = false;
       } else clearFieldError('street');
 
-      if (!pinCode || !/^\d{6}$/.test(pinCode)) {
-        setFieldError('pincode', 'Please enter a valid 6-digit PIN code');
-        isValid = false;
-      } else clearFieldError('pincode');
-
       if (!city) {
-        setFieldError('city', 'Please enter your city');
+        setFieldError('city', 'Please enter City');
         isValid = false;
       } else clearFieldError('city');
 
       if (!stateVal) {
-        setFieldError('state', 'Please select your state');
+        setFieldError('state', 'Please select your State');
         isValid = false;
       } else clearFieldError('state');
 
-      if (!isValid) return;
+      if (!pinCode || !/^\d{6}$/.test(pinCode)) {
+        setFieldError('pincode', 'Please enter a valid 6-digit PIN Code');
+        isValid = false;
+      } else clearFieldError('pincode');
 
-      const newAddress = state.addAddress({
+      if (!isValid) {
+        showToast('Please fill all required address fields correctly.', 'warning');
+        return;
+      }
+
+      state.addAddress({
         fullName,
         phone,
         houseNo,
@@ -342,7 +345,7 @@ function attachAddressEvents(container) {
 }
 
 /* ==========================================================================
-   Step 2: Payment Methods (Google Pay, PhonePe, Cash on Delivery)
+   Step 2: Order Review & Cash on Delivery Payment ONLY
    ========================================================================== */
 export function renderCheckoutPayment(container) {
   const cart = state.getCart();
@@ -355,16 +358,12 @@ export function renderCheckoutPayment(container) {
   const activeAddress = state.getActiveAddress();
   if (!activeAddress) {
     window.location.hash = '#checkout-address';
-    showToast('Please provide a delivery address first', 'warning');
+    showToast('Delivery address is required before placing order.', 'warning');
     return;
   }
 
   const { discount: couponDiscount } = getAppliedCoupon();
   const totals = state.getCartTotals(couponDiscount);
-  let selectedMethod = 'gpay';
-
-  // Generate random 4-digit captcha for COD
-  const codCaptcha = Math.floor(1000 + Math.random() * 9000).toString();
 
   function formatPrice(val) {
     return '₹' + Number(val).toLocaleString('en-IN');
@@ -382,128 +381,89 @@ export function renderCheckoutPayment(container) {
           <div class="step-divider completed"></div>
           <div class="step-node active">
             <span class="step-num">2</span>
-            <span>Payment Method</span>
+            <span>Order Review & Payment</span>
           </div>
           <div class="step-divider"></div>
           <div class="step-node">
             <span class="step-num">3</span>
-            <span>Order Confirmed</span>
+            <span>Order Placed</span>
           </div>
         </div>
 
         <div class="checkout-layout">
-          <!-- Main Payment Selection -->
+          <!-- Main Content -->
           <div class="checkout-main-content">
-            <!-- Selected Address Summary Card -->
+            
+            <!-- 1. Delivery Address Summary -->
             <div class="checkout-card" style="margin-bottom: 1rem;">
-              <div style="padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-subtle);">
+              <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-subtle);">
                 <div>
-                  <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Delivering To:</span>
-                  <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">
-                    ${activeAddress.fullName} • ${activeAddress.phone}
+                  <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">📍 Delivering To:</span>
+                  <div style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-top: 2px;">
+                    ${activeAddress.fullName} • 📱 ${activeAddress.phone}
                   </div>
-                  <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                    ${activeAddress.houseNo}, ${activeAddress.street}, ${activeAddress.city}, ${activeAddress.state} - ${activeAddress.pinCode}
+                  <div style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 2px;">
+                    ${activeAddress.houseNo}, ${activeAddress.street}, ${activeAddress.city}, ${activeAddress.state} - <strong>${activeAddress.pinCode}</strong>
                   </div>
                 </div>
-                <a href="#checkout-address" class="btn btn-sm btn-outline-primary">Change</a>
+                <a href="#checkout-address" class="btn btn-sm btn-outline-primary">Change Address</a>
               </div>
             </div>
 
-            <!-- Payment Methods List -->
+            <!-- 2. Ordered Laptop Items Summary -->
+            <div class="checkout-card" style="margin-bottom: 1.25rem;">
+              <div class="checkout-card-header" style="background: var(--bg-surface); color: var(--text-main); border-bottom: 1px solid var(--border-subtle);">
+                <h3 style="font-size: 1rem; color: var(--text-main);">💻 Laptop Order Summary (${totals.itemsCount} ${totals.itemsCount > 1 ? 'Laptops' : 'Laptop'})</h3>
+              </div>
+              <div class="checkout-card-body" style="display: flex; flex-direction: column; gap: 1rem;">
+                ${cart.map(item => `
+                  <div style="display: flex; gap: 1rem; align-items: center; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 1rem;">
+                    <img src="${item.image}" alt="${item.name}" style="width: 72px; height: 72px; object-fit: contain; background: var(--bg-subtle); border-radius: var(--radius-xs); padding: 4px;" />
+                    <div style="flex: 1;">
+                      <h4 style="font-size: 0.98rem; font-weight: 700; color: var(--text-main);">${item.name}</h4>
+                      <p style="font-size: 0.82rem; color: var(--text-muted);">${item.specsSummary}</p>
+                      <div style="font-size: 0.9rem; font-weight: 700; margin-top: 4px; color: var(--primary-blue);">
+                        ${formatPrice(item.price)} <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">(Qty: ${item.quantity})</span>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 3. Payment Method: Cash on Delivery ONLY -->
             <div class="checkout-card">
               <div class="checkout-card-header">
-                <h3>💳 2. Choose Payment Method</h3>
+                <h3>💵 Payment Method: Cash on Delivery</h3>
               </div>
 
               <div class="checkout-card-body">
-                <div class="payment-methods-list">
-                  <!-- 1. Google Pay UPI -->
-                  <div class="payment-method-card ${selectedMethod === 'gpay' ? 'selected' : ''}" data-method="gpay">
-                    <div class="payment-method-header">
-                      <input type="radio" name="pay_mode" value="gpay" ${selectedMethod === 'gpay' ? 'checked' : ''} />
-                      <div class="payment-method-icon gpay-icon">
-                        <span style="font-weight: 900; font-size: 1.1rem; color: #4285F4;">G</span>
-                      </div>
-                      <div class="payment-method-title">
-                        <h4>Google Pay (UPI)</h4>
-                        <p>Pay instantly using Google Pay UPI ID or scan QR code</p>
-                      </div>
+                <div class="payment-method-card selected" style="border: 2px solid var(--accent-emerald); background: #f0fdf4;">
+                  <div class="payment-method-header" style="cursor: default;">
+                    <input type="radio" name="pay_mode" value="cod" checked style="accent-color: var(--accent-emerald);" />
+                    <div class="payment-method-icon" style="background: #dcfce7; color: #15803d; font-size: 1.5rem;">
+                      💵
                     </div>
-                    <div class="payment-method-body">
-                      <div class="upi-form-box">
-                        <input type="text" id="gpay-upi-id" placeholder="Enter Google Pay UPI ID (e.g. yourname@okaxis)" value="user@okaxis" />
-                        <button type="button" class="btn btn-primary btn-sm" id="btn-verify-gpay">Verify UPI</button>
-                      </div>
-                      <div class="qr-preview-box">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=lapkart@okaxis%26pn=LapKart%26am=${totals.totalPayable}" alt="Google Pay QR Code" class="qr-code-img" />
-                        <div class="qr-text">
-                          <h5>Scan QR Code with Google Pay App</h5>
-                          <p>Open GPay on your mobile, scan the QR and approve payment for <strong>${formatPrice(totals.totalPayable)}</strong>.</p>
-                        </div>
-                      </div>
-                      <button type="button" class="btn btn-orange btn-lg btn-block btn-confirm-pay" style="margin-top: 1rem;">
-                        Pay ${formatPrice(totals.totalPayable)} via Google Pay ➔
-                      </button>
+                    <div class="payment-method-title">
+                      <h4 style="color: #15803d; font-weight: 800;">Cash on Delivery (COD)</h4>
+                      <p style="color: #166534;">Pay cash directly to the delivery executive upon doorstep delivery & package inspection.</p>
                     </div>
                   </div>
 
-                  <!-- 2. PhonePe UPI -->
-                  <div class="payment-method-card ${selectedMethod === 'phonepe' ? 'selected' : ''}" data-method="phonepe">
-                    <div class="payment-method-header">
-                      <input type="radio" name="pay_mode" value="phonepe" ${selectedMethod === 'phonepe' ? 'checked' : ''} />
-                      <div class="payment-method-icon phonepe-icon">
-                        <span style="font-weight: 800; font-size: 1.2rem;">पे</span>
-                      </div>
-                      <div class="payment-method-title">
-                        <h4>PhonePe</h4>
-                        <p>Direct UPI payment / Request on your PhonePe registered mobile</p>
-                      </div>
+                  <div style="padding: 1rem 1.25rem 1.25rem; border-top: 1px dashed #bbf7d0; font-size: 0.85rem; color: #166534;">
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 1rem;">
+                      <span>✓</span>
+                      <span>Zero advance payment required. Inspect your authentic sealed laptop box before paying.</span>
                     </div>
-                    <div class="payment-method-body">
-                      <div class="upi-form-box">
-                        <input type="tel" id="phonepe-number" placeholder="Enter 10-digit PhonePe Mobile Number" value="${activeAddress.phone}" maxlength="10" />
-                        <button type="button" class="btn btn-primary btn-sm" id="btn-verify-phonepe">Send Request</button>
-                      </div>
-                      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        A payment prompt of <strong>${formatPrice(totals.totalPayable)}</strong> will be sent to your PhonePe application.
-                      </p>
-                      <button type="button" class="btn btn-orange btn-lg btn-block btn-confirm-pay">
-                        Pay ${formatPrice(totals.totalPayable)} via PhonePe ➔
-                      </button>
-                    </div>
-                  </div>
 
-                  <!-- 3. Cash on Delivery (COD) -->
-                  <div class="payment-method-card ${selectedMethod === 'cod' ? 'selected' : ''}" data-method="cod">
-                    <div class="payment-method-header">
-                      <input type="radio" name="pay_mode" value="cod" ${selectedMethod === 'cod' ? 'checked' : ''} />
-                      <div class="payment-method-icon cod-icon">
-                        <span>💵</span>
-                      </div>
-                      <div class="payment-method-title">
-                        <h4>Cash on Delivery (COD)</h4>
-                        <p>Pay with cash or UPI to the delivery executive when your laptop arrives</p>
-                      </div>
-                    </div>
-                    <div class="payment-method-body">
-                      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                        Due to high-value laptop security, please enter the security captcha shown below to confirm your COD order:
-                      </p>
-                      <div class="captcha-container">
-                        <div class="captcha-badge-box" id="cod-captcha-display">${codCaptcha}</div>
-                        <div class="captcha-input-wrap">
-                          <input type="text" id="cod-captcha-input" placeholder="Enter characters" maxlength="4" />
-                        </div>
-                      </div>
-                      <button type="button" class="btn btn-orange btn-lg btn-block btn-confirm-pay" id="btn-confirm-cod">
-                        Confirm Order (Cash on Delivery) ➔
-                      </button>
-                    </div>
+                    <button type="button" class="btn btn-orange btn-lg btn-block" id="btn-place-order-cod" style="font-weight: 800; font-size: 1.1rem;">
+                      Place Order (Cash on Delivery) ➔
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
 
           <!-- Price Summary Sidebar -->
@@ -535,6 +495,9 @@ export function renderCheckoutPayment(container) {
               <div class="savings-highlight">
                 🎉 Total Savings: ${formatPrice(totals.totalDiscount)}
               </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">
+                Payment Mode: <strong>Cash on Delivery</strong>
+              </div>
             </div>
           </aside>
         </div>
@@ -542,108 +505,64 @@ export function renderCheckoutPayment(container) {
     </div>
   `;
 
-  attachPaymentEvents(container, codCaptcha, totals);
+  attachPaymentEvents(container, totals);
 }
 
-function attachPaymentEvents(container, expectedCaptcha, totals) {
-  // Method switching
-  container.querySelectorAll('.payment-method-card').forEach(card => {
-    const header = card.querySelector('.payment-method-header');
-    header.addEventListener('click', () => {
-      container.querySelectorAll('.payment-method-card').forEach(c => {
-        c.classList.remove('selected');
-        const radio = c.querySelector('input[type="radio"]');
-        if (radio) radio.checked = false;
-      });
-      card.classList.add('selected');
-      const curRadio = card.querySelector('input[type="radio"]');
-      if (curRadio) curRadio.checked = true;
-    });
-  });
+function attachPaymentEvents(container, totals) {
+  const placeOrderBtn = container.querySelector('#btn-place-order-cod');
+  if (!placeOrderBtn) return;
 
-  // Verify simulations
-  const gpayVerify = container.querySelector('#btn-verify-gpay');
-  if (gpayVerify) {
-    gpayVerify.addEventListener('click', () => {
-      showToast('Google Pay UPI ID verified successfully! ✓', 'success');
-    });
-  }
+  placeOrderBtn.addEventListener('click', async () => {
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.textContent = 'Placing Order & Reserving Laptop...';
 
-  const phonepeVerify = container.querySelector('#btn-verify-phonepe');
-  if (phonepeVerify) {
-    phonepeVerify.addEventListener('click', () => {
-      showToast('Payment request sent to your PhonePe mobile app! 📲', 'success');
-    });
-  }
+    const cart = state.getCart();
+    const activeAddress = state.getActiveAddress();
+    const { couponCode, discount: couponDiscount } = getAppliedCoupon();
+    const finalTotals = state.getCartTotals(couponDiscount);
 
-  // Payment Confirmation Action with Backend REST API Integration
-  container.querySelectorAll('.btn-confirm-pay').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const selectedCard = container.querySelector('.payment-method-card.selected');
-      const methodKey = selectedCard ? selectedCard.dataset.method : 'gpay';
-      let paymentMethodName = 'Google Pay UPI';
+    const orderPayload = {
+      customer: activeAddress,
+      items: cart,
+      pricing: {
+        itemsTotal: finalTotals.mrpTotal,
+        discount: finalTotals.totalDiscount,
+        delivery: 0,
+        totalAmount: finalTotals.totalPayable
+      },
+      paymentMethod: 'Cash on Delivery'
+    };
 
-      if (methodKey === 'gpay') {
-        const upiId = container.querySelector('#gpay-upi-id')?.value.trim() || 'user@okaxis';
-        paymentMethodName = `Google Pay (${upiId})`;
-      } else if (methodKey === 'phonepe') {
-        const phoneNum = container.querySelector('#phonepe-number')?.value.trim() || '9876543210';
-        paymentMethodName = `PhonePe UPI (${phoneNum})`;
-      } else if (methodKey === 'cod') {
-        paymentMethodName = 'Cash on Delivery';
-        const enteredCaptcha = container.querySelector('#cod-captcha-input')?.value.trim();
-        if (enteredCaptcha !== expectedCaptcha) {
-          showToast('Invalid Captcha characters! Please enter correctly.', 'error');
-          return;
-        }
+    try {
+      // Send order to backend API
+      const res = await api.createOrder(orderPayload);
+      const newOrder = res.order;
+
+      // Mark referral coupon as used if applied
+      if (couponCode) {
+        await api.applyCoupon(couponCode, newOrder.orderId).catch(() => {});
       }
 
-      btn.disabled = true;
-      btn.textContent = 'Processing Order & Reserving Laptop in Database...';
+      // Sync local state
+      const localOrders = state.getOrders();
+      localOrders.unshift(newOrder);
+      state.setOrders(localOrders);
+      state.clearCart();
 
-      const cart = state.getCart();
-      const activeAddress = state.getActiveAddress();
-      const { discount: couponDiscount } = getAppliedCoupon();
-      const finalTotals = state.getCartTotals(couponDiscount);
-
-      const orderPayload = {
-        customer: activeAddress,
-        items: cart,
-        pricing: {
-          itemsTotal: finalTotals.mrpTotal,
-          discount: finalTotals.totalDiscount,
-          delivery: 0,
-          totalAmount: finalTotals.totalPayable
-        },
-        paymentMethod: paymentMethodName
-      };
-
-      try {
-        // Send order to backend API
-        const res = await api.createOrder(orderPayload);
-        const newOrder = res.order;
-
-        // Also update local state
-        const localOrders = state.getOrders();
-        localOrders.unshift(newOrder);
-        state.setOrders(localOrders);
-        state.clearCart();
-
-        showToast('Order Placed Successfully in Database! 🎉', 'success');
-        window.location.hash = `#order-confirmed/${newOrder.orderId}`;
-      } catch (err) {
-        console.warn('Backend order failed, falling back to local storage:', err);
-        const fallbackOrder = state.createOrder(orderPayload);
-        state.clearCart();
-        showToast('Order Placed Successfully! 🎉', 'success');
-        window.location.hash = `#order-confirmed/${fallbackOrder.orderId}`;
-      }
-    });
+      showToast('Order Placed Successfully! Waiting for Admin confirmation. 🎉', 'success');
+      window.location.hash = `#order-confirmed/${newOrder.orderId}`;
+    } catch (err) {
+      console.warn('Backend order failed, creating local fallback order:', err);
+      const fallbackOrder = state.createOrder(orderPayload);
+      state.clearCart();
+      showToast('Order Placed Successfully! 🎉', 'success');
+      window.location.hash = `#order-confirmed/${fallbackOrder.orderId}`;
+    }
   });
 }
 
 /* ==========================================================================
-   Step 3: Order Confirmed Celebration Screen
+   Step 3: Order Placed Successfully - "Waiting for Admin Confirmation"
    ========================================================================== */
 export async function renderOrderConfirmed(container, orderId) {
   let order = null;
@@ -669,21 +588,27 @@ export async function renderOrderConfirmed(container, orderId) {
     return '₹' + Number(val).toLocaleString('en-IN');
   }
 
-  const expectedDateObj = new Date(order.deliveryDetails?.expectedDate || Date.now());
-  const dateFormatted = isNaN(expectedDateObj) 
-    ? order.deliveryDetails?.expectedDate 
-    : expectedDateObj.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-
   container.innerHTML = `
     <div class="confirmed-page">
       <div class="container">
-        <!-- Confirmed Celebration Banner -->
+        <!-- Confirmed Banner -->
         <div class="confirmed-banner">
           <div class="success-check-anim">✓</div>
-          <h2>Order Confirmed!</h2>
-          <p>Thank you, <strong>${order.customer.fullName}</strong>. Your laptop order has been secured and confirmed.</p>
+          <h2>Order Placed Successfully!</h2>
+          <p>Thank you, <strong>${order.customer.fullName}</strong>. Your laptop order has been received.</p>
           <div style="margin-top: 1rem; font-size: 0.95rem; color: #d1fae5;">
-            Order ID: <strong style="font-family: monospace; font-size: 1.1rem; color: #fff;">${order.orderId}</strong>
+            Order ID: <strong style="font-family: monospace; font-size: 1.15rem; color: #fff;">${order.orderId}</strong>
+          </div>
+        </div>
+
+        <!-- Initial Status Alert -->
+        <div style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: var(--radius-sm); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+          <div style="font-size: 2rem;">⏳</div>
+          <div>
+            <h4 style="color: #b45309; font-weight: 800; font-size: 1.05rem;">Current Status: ${order.status}</h4>
+            <p style="color: #92400e; font-size: 0.88rem; margin-top: 2px;">
+              Your order is queued for Store Administrator approval. Once verified, the Admin will confirm and schedule dispatch.
+            </p>
           </div>
         </div>
 
@@ -705,7 +630,7 @@ export async function renderOrderConfirmed(container, orderId) {
               </div>
             `).join('')}
             <div style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem; display: flex; justify-content: space-between; font-weight: 800; font-size: 1.1rem;">
-              <span>Total Paid / Payable:</span>
+              <span>Total Payable (Cash on Delivery):</span>
               <span style="color: var(--primary-blue);">${formatPrice(order.pricing.totalAmount)}</span>
             </div>
           </div>
@@ -723,14 +648,14 @@ export async function renderOrderConfirmed(container, orderId) {
 
             <div style="margin-bottom: 1rem;">
               <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Payment Mode:</div>
-              <div style="font-weight: 600; color: var(--text-main);">${order.paymentMethod}</div>
-              <span class="badge ${order.paymentStatus === 'Paid' ? 'badge-in-stock' : 'badge-tag'}">Status: ${order.paymentStatus}</span>
+              <div style="font-weight: 700; color: #15803d;">💵 Cash on Delivery</div>
+              <span class="badge badge-tag" style="margin-top: 4px;">Pending on Delivery Handover</span>
             </div>
 
             <div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Expected Delivery:</div>
-              <div style="font-weight: 700; color: var(--accent-emerald); font-size: 1.05rem;">
-                🚚 Arriving by ${dateFormatted}
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Order Status:</div>
+              <div style="font-weight: 700; color: #d97706; font-size: 0.95rem;">
+                ⏳ ${order.status}
               </div>
             </div>
           </div>
@@ -738,10 +663,13 @@ export async function renderOrderConfirmed(container, orderId) {
 
         <!-- Action CTAs -->
         <div class="confirmed-actions">
-          <a href="#order-tracking/${order.orderId}" class="btn btn-orange btn-lg" id="btn-track-order-confirmed">
-            📦 Track Your Order Live ➔
+          <a href="#my-orders" class="btn btn-orange btn-lg" id="btn-goto-my-orders">
+            📦 View in My Orders & Dashboard ➔
           </a>
-          <a href="#store" class="btn btn-outline-primary btn-lg">
+          <a href="#order-tracking/${order.orderId}" class="btn btn-primary btn-lg">
+            🚚 Track Live Progress
+          </a>
+          <a href="#store" class="btn btn-outline btn-lg">
             💻 Continue Shopping
           </a>
         </div>

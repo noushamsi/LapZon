@@ -26,13 +26,13 @@ export function renderWelcomePage(container) {
                 Experience Flipkart-grade authentic warranty, zero-cost EMI, and instant dispatch on top global laptop brands.
               </p>
               
-              <div class="hero-cta-group">
+              <div class="hero-cta-group" style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <a href="#store" class="btn-get-started" id="welcome-get-started-btn">
-                  <span>Explore Laptops</span>
+                  <span>⚡ Get Started</span>
                   <span style="font-size: 1.25rem;">➔</span>
                 </a>
-                <a href="#store?cat=Gaming" class="btn-explore-outline" id="welcome-gaming-btn">
-                  🎮 Gaming Beasts
+                <a href="#store" class="btn-explore-outline" id="welcome-explore-laptops-btn" style="background: rgba(255,255,255,0.08); border: 2px solid var(--primary-yellow); color: #fff;">
+                  💻 Explore Laptops
                 </a>
               </div>
               

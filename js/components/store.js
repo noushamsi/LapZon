@@ -507,18 +507,18 @@ export async function renderStorePage(container, queryParams = {}) {
       if (!product) return;
 
       if (action === 'add-cart') {
-        const res = state.addToCart(productId, 1);
+        const res = state.addToCart(productId, 1, product);
         if (res.success) {
           showToast(res.message, 'success');
         } else {
           showToast(res.message, 'warning');
         }
       } else if (action === 'buy-now') {
-        if (!product.inStock) {
+        if (product.inStock === false) {
           showToast('Product is currently out of stock!', 'error');
           return;
         }
-        state.addToCart(productId, 1);
+        state.addToCart(productId, 1, product);
         window.location.hash = '#checkout-address';
       } else if (action === 'wishlist') {
         const added = state.toggleWishlist(productId);

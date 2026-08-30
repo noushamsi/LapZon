@@ -57,6 +57,13 @@ export const api = {
   createOrder: (orderData) => request('/orders', { method: 'POST', body: JSON.stringify(orderData) }),
   getOrderById: (orderId) => request(`/orders/${orderId}`),
   getMyOrders: () => request('/orders'),
+  cancelUserOrder: (orderId, reason = '') => request(`/orders/${orderId}/cancel`, { method: 'PUT', body: JSON.stringify({ reason }) }),
+
+  // Referrals & Coupons
+  registerReferral: (referrerCode, name, email) => request('/referrals/register', { method: 'POST', body: JSON.stringify({ referrerCode, name, email }) }),
+  getReferralStatus: (code) => request(`/referrals/status/${encodeURIComponent(code)}`),
+  validateCoupon: (code, cartTotal) => request('/coupons/validate', { method: 'POST', body: JSON.stringify({ code, cartTotal }) }),
+  applyCoupon: (code, orderId) => request('/coupons/apply', { method: 'POST', body: JSON.stringify({ code, orderId }) }),
 
   // Admin APIs (Protected)
   getAdminMetrics: () => request('/admin/metrics'),
@@ -67,6 +74,8 @@ export const api = {
   updateAdminProduct: (id, updates) => request(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
   deleteAdminProduct: (id) => request(`/admin/products/${id}`, { method: 'DELETE' }),
   getAdminOrders: () => request('/admin/orders'),
+  confirmAdminOrder: (orderId) => request(`/admin/orders/${orderId}/confirm`, { method: 'PUT' }),
+  cancelAdminOrder: (orderId, reason = '') => request(`/admin/orders/${orderId}/cancel`, { method: 'PUT', body: JSON.stringify({ reason }) }),
   updateOrderStatus: (orderId, statusData) => request(`/admin/orders/${orderId}/status`, { method: 'PUT', body: JSON.stringify(statusData) }),
   updateOrderDeliveryDetails: (orderId, details) => request(`/admin/orders/${orderId}/delivery-details`, { method: 'PUT', body: JSON.stringify(details) }),
   resetDemoData: () => request('/admin/reset-data', { method: 'POST' })

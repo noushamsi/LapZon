@@ -8,7 +8,7 @@ import { api } from '../services/api.js';
 import { state } from '../state.js';
 import { showToast } from '../app.js';
 
-const STAGES = ["Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
+const STAGES = ["Order Placed", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
 
 export function renderOrderTracking(container, orderId) {
   let pollIntervalId = null;
@@ -54,7 +54,8 @@ export function renderOrderTracking(container, orderId) {
       return;
     }
 
-    const currentStageIndex = STAGES.indexOf(order.status);
+    const isCancelled = order.status && order.status.startsWith('Cancelled');
+    const currentStageIndex = order.status === 'Waiting for Admin Confirmation' ? 0 : STAGES.indexOf(order.status);
     const isDelivered = order.status === "Delivered";
 
     const expectedDateObj = new Date(order.deliveryDetails?.expectedDate || Date.now());
@@ -89,8 +90,16 @@ export function renderOrderTracking(container, orderId) {
             </div>
           </div>
 
-          <!-- PROMINENT DELIVERED SUCCESS BANNER -->
-          ${isDelivered ? `
+          <!-- CANCELLATION / DELIVERED / LIVE LOGISTICS BANNER -->
+          ${isCancelled ? `
+            <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: var(--radius-xs); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+              <div style="font-size: 2.5rem; color: #dc2626;">✕</div>
+              <div>
+                <h3 style="color: #991b1b; font-weight: 800; font-size: 1.2rem;">Order Cancelled (${order.status})</h3>
+                <p style="color: #b91c1c; font-size: 0.9rem; margin-top: 4px;">This laptop order has been cancelled and will not be dispatched. No payment collected for Cash on Delivery.</p>
+              </div>
+            </div>
+          ` : (isDelivered ? `
             <div class="delivered-hero-alert">
               <div class="delivered-alert-content">
                 <div class="delivered-icon-circle">✓</div>
@@ -123,7 +132,7 @@ export function renderOrderTracking(container, orderId) {
                 </div>
               </div>
             </div>
-          `}
+          `)}
 
           <!-- 6-Stage Progress Stepper Card -->
           <div class="timeline-card">
