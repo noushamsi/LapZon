@@ -14,25 +14,32 @@ import { openAuthModal } from './authModal.js';
 export async function renderProductDetails(container, productId) {
   let product = null;
   let dynamicReviews = [];
+  let allProducts = [];
 
   function formatPrice(val) {
     return '₹' + Number(val).toLocaleString('en-IN');
   }
 
   try {
-    const [prodRes, revRes] = await Promise.allSettled([
+    const [prodRes, revRes, allProdRes] = await Promise.allSettled([
       api.getProductById(productId),
-      api.getProductReviews(productId)
+      api.getProductReviews(productId),
+      api.getProducts()
     ]);
 
     if (prodRes.status === 'fulfilled') product = prodRes.value?.product;
     if (revRes.status === 'fulfilled') dynamicReviews = revRes.value?.reviews || [];
+    if (allProdRes.status === 'fulfilled') allProducts = allProdRes.value?.products || [];
   } catch {
     product = state.getProductById(productId);
+    allProducts = state.getProducts() || [];
   }
 
   if (!product) {
     product = state.getProductById(productId);
+  }
+  if (!allProducts || allProducts.length === 0) {
+    allProducts = state.getProducts() || [];
   }
 
   if (!product) {
@@ -50,6 +57,21 @@ export async function renderProductDetails(container, productId) {
     `;
     return;
   }
+
+  // Filter similar laptops (same brand, category, or similar budget, excluding current product)
+  let similarProducts = allProducts.filter(p => p.id !== product.id && p.status !== 'pending');
+  similarProducts.sort((a, b) => {
+    let scoreA = 0;
+    let scoreB = 0;
+    if (a.brand === product.brand) scoreA += 3;
+    if (b.brand === product.brand) scoreB += 3;
+    if (a.category && a.category === product.category) scoreA += 2;
+    if (b.category && b.category === product.category) scoreB += 2;
+    if (a.inStock) scoreA += 1;
+    if (b.inStock) scoreB += 1;
+    return scoreB - scoreA;
+  });
+  similarProducts = similarProducts.slice(0, 4);
 
   const defaultImg = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80';
   const rawImages = (product.images && product.images.length > 0) ? product.images : [product.image || defaultImg];
@@ -329,6 +351,66 @@ export async function renderProductDetails(container, productId) {
 
         </div>
 
+        <!-- Similar Laptops Section -->
+        ${similarProducts.length > 0 ? `
+          <section class="pdp-similar-section" style="margin-top: 3.5rem; padding-top: 2.25rem; border-top: 2px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+              <div>
+                <div style="display: inline-flex; align-items: center; gap: 6px; background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.8rem; padding: 3px 10px; border-radius: 20px; margin-bottom: 6px;">
+                  ✨ Handpicked for You
+                </div>
+                <h2 style="font-size: 1.55rem; font-weight: 800; color: var(--text-main); margin: 0 0 4px; letter-spacing: -0.5px;">
+                  💻 Similar Laptops You May Also Like
+                </h2>
+                <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 0;">
+                  Explore other high-performance laptops with comparable specs, pricing, and ratings.
+                </p>
+              </div>
+              <a href="#store?cat=${encodeURIComponent(product.category || 'All')}" class="btn btn-outline-primary" style="font-weight: 700; font-size: 0.85rem; border-radius: 8px;">
+                View All ${product.category || 'Laptops'} ➔
+              </a>
+            </div>
+
+            <div class="similar-laptops-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem;">
+              ${similarProducts.map(item => `
+                <div class="similar-laptop-card" data-id="${item.id}" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); transition: all 0.25s ease; cursor: pointer; position: relative;">
+                  <div>
+                    <div class="similar-card-img-wrap" style="width: 100%; height: 170px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 1rem; position: relative; background: var(--bg-subtle); border-radius: var(--radius-xs); padding: 8px;">
+                      <img src="${item.image || defaultImg}" alt="${item.name}" loading="lazy" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s ease;" />
+                      <span class="badge badge-rating" style="position: absolute; bottom: 8px; left: 8px; background: #16a34a; color: #fff; font-size: 0.78rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">${item.rating || 4.5} ★</span>
+                      ${item.discount ? `<span class="badge badge-tag" style="position: absolute; top: 8px; right: 8px; background: #fee2e2; color: #dc2626; font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">${item.discount}% OFF</span>` : ''}
+                    </div>
+
+                    <div style="font-size: 0.78rem; color: var(--primary-blue); font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.3px;">
+                      ${item.brand} • ${item.category || 'Laptop'}
+                    </div>
+                    
+                    <h4 class="similar-item-title" style="font-size: 0.98rem; font-weight: 800; color: var(--text-main); line-height: 1.35; margin: 0 0 0.6rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7rem;">
+                      ${item.name}
+                    </h4>
+
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.85rem;">
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 3px;">🚀 ${item.processor || 'High-Speed CPU'}</span>
+                      <span style="background: #f1f5f9; color: #334155; font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 3px;">⚡ ${item.ram || '8GB RAM'} | ${item.storage || '512GB SSD'}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 0.85rem;">
+                      <strong style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">${formatPrice(item.price)}</strong>
+                      ${item.mrp ? `<span style="font-size: 0.82rem; color: var(--text-muted); text-decoration: line-through;">${formatPrice(item.mrp)}</span>` : ''}
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm btn-block btn-view-similar" data-id="${item.id}" style="font-weight: 700; padding: 0.45rem; border-radius: 6px;">
+                      ⚡ View Laptop Details ➔
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </section>
+        ` : ''}
+
       </div>
     </div>
 
@@ -492,4 +574,15 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
       }
     });
   }
+
+  // 6. Similar Products Navigation Handler
+  container.querySelectorAll('.similar-laptop-card, .btn-view-similar').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const targetId = card.dataset.id || card.closest('.similar-laptop-card')?.dataset.id;
+      if (targetId) {
+        window.location.hash = `#product/${targetId}`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
 }

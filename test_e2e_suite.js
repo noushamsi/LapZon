@@ -26,7 +26,7 @@ async function runTests() {
     const prodsRes = await fetch(`${BASE_URL}/api/products`).then(r => r.json());
     assert(prodsRes.success && prodsRes.products.length > 0, `Fetched ${prodsRes.products?.length} approved store laptops`);
     
-    const sampleProduct = prodsRes.products[0];
+    const sampleProduct = prodsRes.products.find(p => p.inStock && (p.stock === undefined || p.stock > 0)) || prodsRes.products[0];
     const singleRes = await fetch(`${BASE_URL}/api/products/${sampleProduct.id}`).then(r => r.json());
     assert(singleRes.success && singleRes.product.name === sampleProduct.name, `Fetched PDP details for "${sampleProduct.name}"`);
 
@@ -111,6 +111,7 @@ async function runTests() {
       headers: userAuthHeaders,
       body: JSON.stringify(orderPayload)
     }).then(r => r.json());
+    if (!placeOrderRes.success) console.error('Order placement response:', placeOrderRes);
     assert(placeOrderRes.success && placeOrderRes.order.status === 'Waiting for Admin Confirmation', `Order #${placeOrderRes.order?.orderId} placed with initial status: "${placeOrderRes.order?.status}"`);
     const createdOrderId = placeOrderRes.order.orderId;
 
