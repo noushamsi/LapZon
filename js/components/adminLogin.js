@@ -62,10 +62,6 @@ export function renderAdminLogin(container) {
               🔐 Authenticate & Enter Dashboard
             </button>
           </form>
-
-          <div style="border-top: 1px solid var(--border-subtle); margin-top: 1.75rem; padding-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
-            Are you a customer? <a href="#store" style="color: var(--primary-blue); font-weight: 600;">Go to Laptop Store</a>
-          </div>
         </div>
       </div>
     </div>

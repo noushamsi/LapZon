@@ -236,7 +236,7 @@ function attachNavbarEvents() {
       auth.logout();
       showToast('Admin session closed.', 'info');
       renderNavbar();
-      window.location.hash = '#store';
+      window.location.hash = '#admin-login';
     });
   }
 }

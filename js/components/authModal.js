@@ -94,6 +94,20 @@ function renderAuthModalContent() {
         <button type="submit" id="btn-auth-submit" class="btn btn-primary btn-block btn-lg" style="width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: 800; font-size: 0.95rem; background: #2874f0; color: #fff; border: none; cursor: pointer;">
           ${activeTab === 'login' ? 'Sign In to Account' : activeTab === 'register' ? 'Create Customer Account' : 'Reset Password'}
         </button>
+
+        ${activeTab === 'login' ? `
+          <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: #64748b;">
+            New to LapKart? <a href="#" id="auth-switch-register" style="color: #2874f0; font-weight: 700; text-decoration: none;">Create an account</a>
+          </div>
+        ` : (activeTab === 'register' ? `
+          <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: #64748b;">
+            Already have an account? <a href="#" id="auth-switch-login" style="color: #2874f0; font-weight: 700; text-decoration: none;">Sign In</a>
+          </div>
+        ` : `
+          <div style="text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: #64748b;">
+            Remember your password? <a href="#" id="auth-switch-login" style="color: #2874f0; font-weight: 700; text-decoration: none;">Back to Sign In</a>
+          </div>
+        `)}
       </form>
     </div>
   `;
@@ -107,7 +121,8 @@ function attachModalEvents() {
   const tabLogin = document.getElementById('tab-btn-login');
   const tabRegister = document.getElementById('tab-btn-register');
   const forgotLink = document.getElementById('auth-forgot-link');
-  const adminLoginLink = document.getElementById('auth-admin-login-link');
+  const switchRegister = document.getElementById('auth-switch-register');
+  const switchLogin = document.getElementById('auth-switch-login');
   const form = document.getElementById('auth-main-form');
   const errorMsg = document.getElementById('auth-error-msg');
 
@@ -132,17 +147,27 @@ function attachModalEvents() {
     });
   }
 
+  if (switchRegister) {
+    switchRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      activeTab = 'register';
+      renderAuthModalContent();
+    });
+  }
+
+  if (switchLogin) {
+    switchLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      activeTab = 'login';
+      renderAuthModalContent();
+    });
+  }
+
   if (forgotLink) {
     forgotLink.addEventListener('click', (e) => {
       e.preventDefault();
       activeTab = 'forgot';
       renderAuthModalContent();
-    });
-  }
-
-  if (adminLoginLink) {
-    adminLoginLink.addEventListener('click', () => {
-      closeAuthModal();
     });
   }
 
