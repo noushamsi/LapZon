@@ -1283,23 +1283,33 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
           <form id="form-edit-delivery" class="address-form-grid">
             <div class="form-group full-width">
-              <label>Courier Logistics Partner</label>
-              <input type="text" id="edit-courier" value="${order.deliveryDetails?.courierPartner || 'Ekart Logistics'}" />
+              <label>Courier Logistics Partner <span class="req">*</span></label>
+              <input type="text" id="edit-courier" value="${order.deliveryDetails?.courierPartner || 'Ekart Express Logistics'}" required />
             </div>
 
             <div class="form-group full-width">
-              <label>Tracking AWB Code</label>
-              <input type="text" id="edit-awb" value="${order.deliveryDetails?.trackingNumber || 'EK-EXP-847291'}" />
+              <label>Tracking AWB Code <span class="req">*</span></label>
+              <input type="text" id="edit-awb" value="${order.deliveryDetails?.trackingNumber || 'EK-EXP-28706654IN'}" required />
+            </div>
+
+            <div class="form-group">
+              <label>Courier / Delivery Agent Name</label>
+              <input type="text" id="edit-courier-name" value="${order.deliveryDetails?.deliveryPersonName || 'Rajesh Kumar (Ekart Agent)'}" placeholder="e.g. Rajesh Kumar" />
+            </div>
+
+            <div class="form-group">
+              <label>Courier / Delivery Agent Phone Number</label>
+              <input type="tel" id="edit-courier-phone" value="${order.deliveryDetails?.deliveryPersonPhone || '9876543210'}" placeholder="e.g. 9876543210" />
             </div>
 
             <div class="form-group full-width">
               <label>Current Location Hub Checkpoint (e.g. "Bengaluru Distribution Center")</label>
-              <input type="text" id="edit-location" value="${order.deliveryDetails?.currentLocation || 'Bengaluru Distribution Center'}" />
+              <input type="text" id="edit-location" value="${order.deliveryDetails?.currentLocation || 'Bengaluru Express Hub'}" />
             </div>
 
             <div class="form-group full-width">
-              <label>Expected Delivery Date</label>
-              <input type="date" id="edit-expected-date" value="${order.deliveryDetails?.expectedDate || '2026-09-02'}" />
+              <label>Expected Delivery Date <span class="req">*</span></label>
+              <input type="date" id="edit-expected-date" value="${order.deliveryDetails?.expectedDate ? order.deliveryDetails.expectedDate.split('T')[0] : '2026-09-02'}" required />
             </div>
 
             <div class="form-group full-width" style="margin-top: 1rem;">
@@ -1323,6 +1333,8 @@ export async function renderAdminDashboard(container, queryParams = {}) {
         e.preventDefault();
         const courierPartner = modal.querySelector('#edit-courier').value.trim();
         const trackingNumber = modal.querySelector('#edit-awb').value.trim();
+        const deliveryPersonName = modal.querySelector('#edit-courier-name').value.trim();
+        const deliveryPersonPhone = modal.querySelector('#edit-courier-phone').value.trim();
         const currentLocation = modal.querySelector('#edit-location').value.trim();
         const expectedDate = modal.querySelector('#edit-expected-date').value;
 
@@ -1330,11 +1342,13 @@ export async function renderAdminDashboard(container, queryParams = {}) {
           await api.updateOrderDeliveryDetails(order.orderId, {
             courierPartner,
             trackingNumber,
+            deliveryPersonName,
+            deliveryPersonPhone,
             currentLocation,
             expectedDate
           });
 
-          showToast('Courier & location details updated! User tracking synced.', 'success');
+          showToast('Courier & delivery info updated! Live tracking synced.', 'success');
           modal.classList.remove('active');
           loadAdminData();
         } catch (err) {

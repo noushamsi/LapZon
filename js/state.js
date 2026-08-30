@@ -487,10 +487,12 @@ class StateStore {
     order.status = nextStatus;
     const now = new Date().toISOString();
 
-    if (customDetails.courierPartner) order.deliveryDetails.courierPartner = customDetails.courierPartner;
-    if (customDetails.trackingNumber) order.deliveryDetails.trackingNumber = customDetails.trackingNumber;
-    if (customDetails.currentLocation) order.deliveryDetails.currentLocation = customDetails.currentLocation;
-    if (customDetails.expectedDate) order.deliveryDetails.expectedDate = customDetails.expectedDate;
+    if (customDetails.courierPartner !== undefined) order.deliveryDetails.courierPartner = customDetails.courierPartner;
+    if (customDetails.trackingNumber !== undefined) order.deliveryDetails.trackingNumber = customDetails.trackingNumber;
+    if (customDetails.deliveryPersonName !== undefined) order.deliveryDetails.deliveryPersonName = customDetails.deliveryPersonName;
+    if (customDetails.deliveryPersonPhone !== undefined) order.deliveryDetails.deliveryPersonPhone = customDetails.deliveryPersonPhone;
+    if (customDetails.currentLocation !== undefined) order.deliveryDetails.currentLocation = customDetails.currentLocation;
+    if (customDetails.expectedDate !== undefined) order.deliveryDetails.expectedDate = customDetails.expectedDate;
 
     if (nextStatus === "Delivered") {
       order.deliveryDetails.deliveredAt = now;

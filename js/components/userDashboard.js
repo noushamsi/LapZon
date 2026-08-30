@@ -248,6 +248,8 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
                 ${order.deliveryDetails?.trackingNumber ? `
                   <div style="color: #2874f0; font-weight: 700;">
                     AWB: ${order.deliveryDetails.trackingNumber} (${order.deliveryDetails.courierPartner || 'Ekart'})
+                    ${order.deliveryDetails.deliveryPersonName ? `• 🛵 Agent: ${order.deliveryDetails.deliveryPersonName} ${order.deliveryDetails.deliveryPersonPhone ? `(${order.deliveryDetails.deliveryPersonPhone})` : ''}` : ''}
+                    ${order.deliveryDetails.expectedDate ? `• 📅 Est. Delivery: ${order.deliveryDetails.expectedDate.split('T')[0]}` : ''}
                   </div>
                 ` : ''}
               </div>

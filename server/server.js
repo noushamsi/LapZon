@@ -591,7 +591,7 @@ app.put('/api/admin/orders/:orderId/status', requireAdmin, (req, res) => {
 
 // Admin: Update courier & location checkpoint details
 app.put('/api/admin/orders/:orderId/delivery-details', requireAdmin, (req, res) => {
-  const { courierPartner, trackingNumber, currentLocation, expectedDate } = req.body;
+  const { courierPartner, trackingNumber, deliveryPersonName, deliveryPersonPhone, currentLocation, expectedDate } = req.body;
   const order = db.getOrderById(req.params.orderId);
 
   if (!order) {
@@ -601,6 +601,8 @@ app.put('/api/admin/orders/:orderId/delivery-details', requireAdmin, (req, res) 
   const updatedOrder = db.updateOrderStatus(req.params.orderId, order.status, {
     courierPartner,
     trackingNumber,
+    deliveryPersonName,
+    deliveryPersonPhone,
     currentLocation,
     expectedDate
   });

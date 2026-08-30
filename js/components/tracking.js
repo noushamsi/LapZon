@@ -121,7 +121,12 @@ export function renderOrderTracking(container, orderId) {
                 <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-top: 2px;">
                   🚀 ${order.deliveryDetails?.courierPartner || 'Ekart Logistics'} (AWB: ${order.deliveryDetails?.trackingNumber || 'EK-EXP-9102834'})
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+                ${order.deliveryDetails?.deliveryPersonName ? `
+                  <div style="font-size: 0.85rem; color: var(--text-main); margin-top: 3px;">
+                    🛵 Courier Agent: <strong>${order.deliveryDetails.deliveryPersonName}</strong> ${order.deliveryDetails.deliveryPersonPhone ? `• 📞 <a href="tel:${order.deliveryDetails.deliveryPersonPhone}" style="color: var(--primary-blue); font-weight: 700;">${order.deliveryDetails.deliveryPersonPhone}</a>` : ''}
+                  </div>
+                ` : ''}
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 3px;">
                   Current Location: <strong style="color: var(--primary-blue);">${order.deliveryDetails?.currentLocation || 'Distribution Facility'}</strong>
                 </div>
               </div>
