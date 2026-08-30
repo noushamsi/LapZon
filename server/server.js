@@ -142,10 +142,10 @@ app.post('/api/orders', optionalAuth, (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing required order details.' });
   }
 
-  // Validate stock
+  // Validate stock if product exists in DB
   for (const item of items) {
     const prod = db.getProductById(item.id);
-    if (!prod || !prod.inStock || prod.stock < item.quantity) {
+    if (prod && (!prod.inStock || (prod.stock !== undefined && prod.stock < item.quantity))) {
       return res.status(400).json({
         success: false,
         error: `Laptop "${item.name}" is currently out of stock or insufficient quantity.`

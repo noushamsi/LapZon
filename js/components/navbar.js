@@ -125,12 +125,6 @@ export function renderNavbar() {
                       <div style="font-size: 0.75rem; color: #64748b;">${user.email}</div>
                     </div>
 
-                    ${isAdmin ? `
-                      <a href="#admin" style="display: flex; align-items: center; gap: 8px; padding: 0.65rem 1rem; color: #b45309; background: #fef3c7; font-weight: 700; text-decoration: none; font-size: 0.85rem;">
-                        👑 Owner Admin Center
-                      </a>
-                    ` : ''}
-
                     <a href="#user-dashboard?tab=profile" style="display: flex; align-items: center; gap: 8px; padding: 0.6rem 1rem; color: #334155; text-decoration: none; font-size: 0.85rem;">
                       👤 Customer Profile
                     </a>

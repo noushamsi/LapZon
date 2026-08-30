@@ -102,11 +102,17 @@ export const api = {
   updateOrderStatus: (orderId, statusData) => request(`/admin/orders/${orderId}/status`, { method: 'PUT', body: JSON.stringify(statusData) }),
   updateOrderDeliveryDetails: (orderId, details) => request(`/admin/orders/${orderId}/delivery-details`, { method: 'PUT', body: JSON.stringify(details) }),
   getAdminReturns: () => request('/admin/returns'),
-  updateAdminReturnStatus: (id, statusData) => request(`/admin/returns/${id}/status`, { method: 'PUT', body: JSON.stringify(statusData) }),
+  updateAdminReturnStatus: (id, statusData, adminNotes = '') => {
+    const payload = typeof statusData === 'string' ? { status: statusData, adminNotes } : statusData;
+    return request(`/admin/returns/${id}/status`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
   getAdminReviews: () => request('/admin/reviews'),
   approveAdminReview: (id) => request(`/admin/reviews/${id}/approve`, { method: 'PUT' }),
   deleteAdminReview: (id) => request(`/admin/reviews/${id}`, { method: 'DELETE' }),
   getAdminTickets: () => request('/admin/support/tickets'),
-  replyAdminTicket: (id, replyData) => request(`/admin/support/tickets/${id}/reply`, { method: 'PUT', body: JSON.stringify(replyData) }),
+  replyAdminTicket: (id, replyData, status = 'Resolved') => {
+    const payload = typeof replyData === 'string' ? { reply: replyData, status } : replyData;
+    return request(`/admin/support/tickets/${id}/reply`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
   resetDemoData: () => request('/admin/reset-data', { method: 'POST' })
 };

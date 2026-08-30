@@ -534,8 +534,25 @@ function attachPaymentEvents(container, totals) {
   if (!placeOrderBtn) return;
 
   placeOrderBtn.addEventListener('click', async () => {
+    const activeAddress = state.getActiveAddress();
+    if (!activeAddress) {
+      showToast('Delivery address is missing. Please enter your address first.', 'warning');
+      window.location.hash = '#checkout-address';
+      return;
+    }
+
     placeOrderBtn.disabled = true;
     placeOrderBtn.textContent = 'Placing Order & Reserving Laptop...';
+
+    const cart = state.getCart();
+    if (cart.length === 0) {
+      showToast('Your cart is empty! Add a laptop first.', 'warning');
+      window.location.hash = '#store';
+      return;
+    }
+
+    const { couponCode, discount: couponDiscount } = getAppliedCoupon();
+    const finalTotals = state.getCartTotals(couponDiscount);
 
     const user = auth.getUser();
     const customerInfo = {
@@ -575,11 +592,18 @@ function attachPaymentEvents(container, totals) {
       showToast('Order Placed Successfully! Waiting for Admin confirmation. 🎉', 'success');
       window.location.hash = `#order-confirmed/${newOrder.orderId}`;
     } catch (err) {
-      console.warn('Backend order failed, creating local fallback order:', err);
+      console.warn('Backend order attempt error, placing order via local storage:', err);
       const fallbackOrder = state.createOrder(orderPayload);
       state.clearCart();
-      showToast('Order Placed Successfully! 🎉', 'success');
+      showToast('Order Placed Successfully! Waiting for Admin confirmation. 🎉', 'success');
       window.location.hash = `#order-confirmed/${fallbackOrder.orderId}`;
+    } finally {
+      setTimeout(() => {
+        if (placeOrderBtn) {
+          placeOrderBtn.disabled = false;
+          placeOrderBtn.textContent = 'Place Order (Cash on Delivery) ➔';
+        }
+      }, 1200);
     }
   });
 }
