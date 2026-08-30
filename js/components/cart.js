@@ -5,7 +5,6 @@
 
 import { state } from '../state.js';
 import { showToast } from '../app.js';
-
 import { api } from '../services/api.js';
 
 let appliedCoupon = null;
@@ -19,6 +18,8 @@ export function setAppliedCoupon({ couponCode, discount }) {
 export function getAppliedCoupon() {
   return { couponCode: appliedCoupon, discount: couponDiscount };
 }
+
+export function initCartDrawer() {
   const drawerHtml = `
     <div id="cart-drawer-overlay" class="cart-drawer-overlay">
       <div class="cart-drawer" id="cart-drawer">
@@ -78,10 +79,6 @@ export function closeCart() {
   if (overlay) {
     overlay.classList.remove('active');
   }
-}
-
-export function getAppliedCoupon() {
-  return { coupon: appliedCoupon, discount: couponDiscount };
 }
 
 export function renderCartContents() {

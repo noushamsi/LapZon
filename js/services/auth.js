@@ -6,16 +6,36 @@
 const TOKEN_KEY = 'lapkart_auth_token_v2';
 const USER_KEY = 'lapkart_auth_user_v2';
 
+const safeStorage = {
+  getItem: (k) => {
+    try {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem(k) : null;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (k, v) => {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.setItem(k, v);
+    } catch {}
+  },
+  removeItem: (k) => {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(k);
+    } catch {}
+  }
+};
+
 class AuthService {
   constructor() {
-    this.token = localStorage.getItem(TOKEN_KEY) || null;
+    this.token = safeStorage.getItem(TOKEN_KEY) || null;
     this.user = this.loadStoredUser();
     this.listeners = new Set();
   }
 
   loadStoredUser() {
     try {
-      const raw = localStorage.getItem(USER_KEY);
+      const raw = safeStorage.getItem(USER_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -54,16 +74,16 @@ class AuthService {
   setSession(token, user) {
     this.token = token;
     this.user = user;
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    safeStorage.setItem(TOKEN_KEY, token);
+    safeStorage.setItem(USER_KEY, JSON.stringify(user));
     this.notify();
   }
 
   logout() {
     this.token = null;
     this.user = null;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    safeStorage.removeItem(TOKEN_KEY);
+    safeStorage.removeItem(USER_KEY);
     this.notify();
   }
 }
