@@ -79,10 +79,15 @@ export async function renderCheckoutAddress(container) {
                       <div class="saved-addr-card ${activeAddress && activeAddress.id === addr.id ? 'selected' : ''}" data-id="${addr.id}">
                         <input type="radio" name="selected_addr" class="saved-addr-radio" value="${addr.id}" ${activeAddress && activeAddress.id === addr.id ? 'checked' : ''} />
                         <div class="saved-addr-info">
-                          <div class="saved-addr-top">
-                            <span class="saved-addr-name">${addr.fullName}</span>
-                            <span class="badge badge-tag">${addr.addressType || 'Home'}</span>
-                            <span class="saved-addr-phone">📱 ${addr.phone}</span>
+                          <div class="saved-addr-top" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                              <span class="saved-addr-name">${addr.fullName}</span>
+                              <span class="badge badge-tag">${addr.addressType || 'Home'}</span>
+                              <span class="saved-addr-phone">📱 ${addr.phone}</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline btn-delete-checkout-addr" data-id="${addr.id}" title="Remove Address" style="color: #ef4444; border-color: #fca5a5; padding: 2px 8px; font-size: 0.75rem;">
+                              🗑️ Remove
+                            </button>
                           </div>
                           <p class="saved-addr-text">
                             ${addr.houseNo}, ${addr.street}, ${addr.city}, ${addr.state} - <strong>${addr.pinCode}</strong>
@@ -247,7 +252,8 @@ function attachAddressEvents(container) {
 
   // Handle saved address radio clicking
   container.querySelectorAll('.saved-addr-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-delete-checkout-addr')) return;
       const addrId = card.dataset.id;
       const addresses = state.getAddresses();
       const selected = addresses.find(a => a.id === addrId);
@@ -255,6 +261,22 @@ function attachAddressEvents(container) {
         state.setActiveAddress(selected);
         renderCheckoutAddress(container);
       }
+    });
+  });
+
+  // Handle address delete button
+  container.querySelectorAll('.btn-delete-checkout-addr').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const addrId = btn.dataset.id;
+      state.deleteAddress(addrId);
+      if (auth.isAuthenticated()) {
+        try {
+          await api.deleteUserAddress(addrId);
+        } catch {}
+      }
+      showToast('Address removed.', 'info');
+      renderCheckoutAddress(container);
     });
   });
 

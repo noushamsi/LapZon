@@ -310,7 +310,20 @@ class StateStore {
     try {
       const raw = safeStorage.getItem(STORAGE_KEYS.ADDRESSES);
       const parsed = raw ? JSON.parse(raw) : null;
-      return (Array.isArray(parsed)) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      
+      // Deduplicate addresses by key details (phone + houseNo + pinCode)
+      const seen = new Set();
+      const unique = [];
+      for (const addr of parsed) {
+        if (!addr || !addr.phone) continue;
+        const key = `${addr.phone}_${(addr.houseNo || '').toLowerCase()}_${addr.pinCode}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(addr);
+        }
+      }
+      return unique;
     } catch {
       return [];
     }
@@ -336,7 +349,9 @@ class StateStore {
   }
 
   addAddress(addressData) {
-    const addresses = this.getAddresses();
+    let addresses = this.getAddresses();
+    // Remove identical previous address
+    addresses = addresses.filter(a => !(a.phone === addressData.phone && a.houseNo === addressData.houseNo && a.pinCode === addressData.pinCode));
     const newAddress = {
       id: `addr-${Date.now()}`,
       ...addressData,
@@ -346,6 +361,16 @@ class StateStore {
     this.setAddresses(addresses);
     this.setActiveAddress(newAddress);
     return newAddress;
+  }
+
+  deleteAddress(id) {
+    let addresses = this.getAddresses().filter(a => a.id !== id);
+    this.setAddresses(addresses);
+    const active = this.getActiveAddress();
+    if (active && active.id === id) {
+      this.setActiveAddress(addresses[0] || null);
+    }
+    return addresses;
   }
 
   // --- ORDERS ---
