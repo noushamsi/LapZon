@@ -1,0 +1,404 @@
+/**
+ * LapKart Express.js REST API Server
+ * Full REST endpoints, Role-Based Access Control (RBAC), and static file hosting.
+ */
+
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { db } from './db.js';
+import { generateToken, verifyToken, requireAdmin, optionalAuth } from './middleware/auth.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.join(__dirname, '..');
+
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// Middlewares
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request Logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// ==========================================================================
+// 1. AUTHENTICATION & RBAC ENDPOINTS
+// ==========================================================================
+
+// Login for Admin and Users
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Email and password are required.' });
+  }
+
+  const user = db.getUserByEmail(email);
+  if (!user || user.password !== password) {
+    return res.status(401).json({ success: false, error: 'Invalid email address or password.' });
+  }
+
+  const token = generateToken(user);
+
+  return res.json({
+    success: true,
+    message: `Welcome back, ${user.name}!`,
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
+// Register new customer
+app.post('/api/auth/register', (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ success: false, error: 'Name, email, and password are required.' });
+  }
+
+  const existing = db.getUserByEmail(email);
+  if (existing) {
+    return res.status(409).json({ success: false, error: 'An account with this email already exists.' });
+  }
+
+  const newUser = db.createUser({ name, email, password });
+  const token = generateToken(newUser);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Account created successfully!',
+    token,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
+    }
+  });
+});
+
+// Get currently logged-in user profile
+app.get('/api/auth/me', verifyToken, (req, res) => {
+  const user = db.getUserById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'User not found.' });
+  }
+
+  return res.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
+  });
+});
+
+// ==========================================================================
+// 2. PUBLIC USER PRODUCT ENDPOINTS (ONLY APPROVED LAPTOPS SHOWN)
+// ==========================================================================
+
+// Get list of all approved laptops for user store
+app.get('/api/products', (req, res) => {
+  const products = db.getApprovedProducts();
+  return res.json({
+    success: true,
+    count: products.length,
+    products
+  });
+});
+
+// Get single product details
+app.get('/api/products/:id', (req, res) => {
+  const product = db.getProductById(req.params.id);
+  if (!product || product.status !== 'approved') {
+    return res.status(404).json({ success: false, error: 'Product not found or unavailable in store.' });
+  }
+  return res.json({ success: true, product });
+});
+
+// ==========================================================================
+// 3. USER ORDER CREATION & REAL-TIME TRACKING ENDPOINTS
+// ==========================================================================
+
+// Place a new laptop order
+app.post('/api/orders', optionalAuth, (req, res) => {
+  const { customer, items, pricing, paymentMethod } = req.body;
+
+  if (!customer || !items || items.length === 0 || !pricing || !paymentMethod) {
+    return res.status(400).json({ success: false, error: 'Missing required order details.' });
+  }
+
+  // Validate stock
+  for (const item of items) {
+    const prod = db.getProductById(item.id);
+    if (!prod || !prod.inStock || prod.stock < item.quantity) {
+      return res.status(400).json({
+        success: false,
+        error: `Laptop "${item.name}" is currently out of stock or insufficient quantity.`
+      });
+    }
+  }
+
+  const userId = req.user ? req.user.id : null;
+  const order = db.createOrder({ userId, customer, items, pricing, paymentMethod });
+
+  return res.status(201).json({
+    success: true,
+    message: 'Order placed successfully!',
+    order
+  });
+});
+
+// Get single order for live tracking
+app.get('/api/orders/:orderId', (req, res) => {
+  const order = db.getOrderById(req.params.orderId);
+  if (!order) {
+    return res.status(404).json({ success: false, error: 'Order not found.' });
+  }
+  return res.json({ success: true, order });
+});
+
+// Get user order history
+app.get('/api/orders', optionalAuth, (req, res) => {
+  const allOrders = db.getOrders();
+  if (req.user && req.user.id) {
+    const userOrders = allOrders.filter(o => o.userId === req.user.id || (o.customer && o.customer.phone === req.user.phone));
+    return res.json({ success: true, orders: userOrders.length > 0 ? userOrders : allOrders });
+  }
+  return res.json({ success: true, orders: allOrders });
+});
+
+// ==========================================================================
+// 4. PROTECTED ADMIN ENDPOINTS (STRICTLY REQUIRE ADMIN ROLE)
+// ==========================================================================
+
+// Admin KPI metrics overview
+app.get('/api/admin/metrics', requireAdmin, (req, res) => {
+  const products = db.getAllProducts();
+  const orders = db.getOrders();
+
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.pricing?.totalAmount || 0), 0);
+  const activeShipments = orders.filter(o => o.status !== 'Delivered').length;
+  const pendingApprovals = products.filter(p => p.status === 'pending').length;
+  const liveApprovedCount = products.filter(p => p.status === 'approved').length;
+  const outOfStockCount = products.filter(p => p.status === 'approved' && (!p.inStock || p.stock === 0)).length;
+
+  return res.json({
+    success: true,
+    metrics: {
+      totalRevenue,
+      totalOrders: orders.length,
+      activeShipments,
+      totalProducts: liveApprovedCount,
+      pendingApprovals,
+      outOfStockCount
+    }
+  });
+});
+
+// Admin: Get all products (including pending drafts)
+app.get('/api/admin/products', requireAdmin, (req, res) => {
+  const products = db.getAllProducts();
+  return res.json({
+    success: true,
+    count: products.length,
+    products
+  });
+});
+
+// Admin: Add new laptop product
+app.post('/api/admin/products', requireAdmin, (req, res) => {
+  const { name, brand, category, processor, ram, storage, graphics, display, os, mrp, price, stock, inStock, image, images, description, status } = req.body;
+
+  if (!name || !brand || !processor || !ram || !storage || !mrp || !price || !image) {
+    return res.status(400).json({ success: false, error: 'All primary laptop specifications, pricing, and image are required.' });
+  }
+
+  const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const initialStatus = status || 'pending'; // Defaults to pending approval workflow
+
+  const newProduct = db.createProduct({
+    name,
+    brand,
+    category: category || 'Ultrabook',
+    series: `${brand} Series`,
+    processor,
+    ram,
+    storage,
+    graphics: graphics || 'Integrated Graphics',
+    display: display || '15.6-inch FHD Display',
+    os: os || 'Windows 11 Home',
+    mrp: Number(mrp),
+    price: Number(price),
+    discount,
+    stock: Number(stock) || 10,
+    inStock: inStock !== undefined ? Boolean(inStock) : true,
+    image,
+    images: images && images.length > 0 ? images : [image],
+    description: description || 'High-performance laptop engineered for speed, power efficiency, and stunning visuals.'
+  }, initialStatus);
+
+  return res.status(201).json({
+    success: true,
+    message: initialStatus === 'approved' 
+      ? `"${name}" published directly to store!` 
+      : `"${name}" submitted to Owner Confirmation Queue!`,
+    product: newProduct
+  });
+});
+
+// Admin: Approve a pending product (Makes it visible in User Store)
+app.put('/api/admin/products/:id/approve', requireAdmin, (req, res) => {
+  const product = db.approveProduct(req.params.id);
+  if (!product) {
+    return res.status(404).json({ success: false, error: 'Product not found.' });
+  }
+  return res.json({
+    success: true,
+    message: `"${product.name}" has been approved and is now LIVE in the User Store! 🚀`,
+    product
+  });
+});
+
+// Admin: Toggle Stock status or update stock quantity
+app.put('/api/admin/products/:id/stock', requireAdmin, (req, res) => {
+  const { stock, inStock } = req.body;
+  const product = db.getProductById(req.params.id);
+
+  if (!product) {
+    return res.status(404).json({ success: false, error: 'Product not found.' });
+  }
+
+  const updates = {};
+  if (stock !== undefined) {
+    updates.stock = Math.max(0, Number(stock));
+    updates.inStock = updates.stock > 0;
+  }
+  if (inStock !== undefined) {
+    updates.inStock = Boolean(inStock);
+    if (updates.inStock && product.stock === 0) updates.stock = 10;
+  }
+
+  const updated = db.updateProduct(req.params.id, updates);
+  return res.json({
+    success: true,
+    message: `Stock updated for "${updated.name}" (${updated.inStock ? 'IN STOCK' : 'OUT OF STOCK'})`,
+    product: updated
+  });
+});
+
+// Admin: Edit product details
+app.put('/api/admin/products/:id', requireAdmin, (req, res) => {
+  const updated = db.updateProduct(req.params.id, req.body);
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Product not found.' });
+  }
+  return res.json({ success: true, message: 'Product updated successfully.', product: updated });
+});
+
+// Admin: Delete product
+app.delete('/api/admin/products/:id', requireAdmin, (req, res) => {
+  const success = db.deleteProduct(req.params.id);
+  return res.json({ success, message: 'Product deleted from store catalog.' });
+});
+
+// Admin: Get all customer orders
+app.get('/api/admin/orders', requireAdmin, (req, res) => {
+  const orders = db.getOrders();
+  return res.json({
+    success: true,
+    count: orders.length,
+    orders
+  });
+});
+
+// Admin: Update order status (Confirmed -> Packed -> Shipped -> In Transit -> Out for Delivery -> Delivered)
+app.put('/api/admin/orders/:orderId/status', requireAdmin, (req, res) => {
+  const { status, courierPartner, trackingNumber, currentLocation, expectedDate } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ success: false, error: 'Status is required.' });
+  }
+
+  const updatedOrder = db.updateOrderStatus(req.params.orderId, status, {
+    courierPartner,
+    trackingNumber,
+    currentLocation,
+    expectedDate
+  });
+
+  if (!updatedOrder) {
+    return res.status(404).json({ success: false, error: 'Order not found.' });
+  }
+
+  return res.json({
+    success: true,
+    message: `Order #${updatedOrder.orderId} status updated to "${status}". Live user tracking synchronized.`,
+    order: updatedOrder
+  });
+});
+
+// Admin: Update courier & location checkpoint details
+app.put('/api/admin/orders/:orderId/delivery-details', requireAdmin, (req, res) => {
+  const { courierPartner, trackingNumber, currentLocation, expectedDate } = req.body;
+  const order = db.getOrderById(req.params.orderId);
+
+  if (!order) {
+    return res.status(404).json({ success: false, error: 'Order not found.' });
+  }
+
+  const updatedOrder = db.updateOrderStatus(req.params.orderId, order.status, {
+    courierPartner,
+    trackingNumber,
+    currentLocation,
+    expectedDate
+  });
+
+  return res.json({
+    success: true,
+    message: 'Courier tracking details updated.',
+    order: updatedOrder
+  });
+});
+
+// Admin: Reset database to seed demo
+app.post('/api/admin/reset-data', requireAdmin, (req, res) => {
+  db.resetDatabase();
+  return res.json({ success: true, message: 'Database reset to default demo dataset.' });
+});
+
+// ==========================================================================
+// 5. STATIC ASSETS & SINGLE PAGE APP (SPA) ROUTING
+// ==========================================================================
+
+// Serve static frontend files
+app.use(express.static(ROOT_DIR));
+
+// Fallback all non-API requests to index.html
+app.get('*', (req, res) => {
+  if (req.url.startsWith('/api/')) {
+    return res.status(404).json({ success: false, error: 'API endpoint not found.' });
+  }
+  res.sendFile(path.join(ROOT_DIR, 'index.html'));
+});
+
+// Start Server
+app.listen(PORT, () => {
+  console.log(`⚡ LapKart Full-Stack Server running at: http://localhost:${PORT}`);
+  console.log(`🔐 Admin Login: admin@lapkart.com / Admin@123`);
+  console.log(`👤 Customer Login: customer@gmail.com / User@123`);
+});

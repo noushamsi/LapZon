@@ -1,0 +1,79 @@
+/**
+ * Client-side Hash Router with RBAC Route Guard & Dedicated Product Details Page
+ */
+
+import { auth } from './services/auth.js';
+import { renderWelcomePage } from './components/welcome.js';
+import { renderStorePage } from './components/store.js';
+import { renderProductDetails } from './components/productDetails.js';
+import { renderCheckoutAddress, renderCheckoutPayment, renderOrderConfirmed } from './components/checkout.js';
+import { renderOrderTracking } from './components/tracking.js';
+import { renderMyOrders } from './components/myOrders.js';
+import { renderAdminDashboard } from './components/admin.js';
+import { renderAdminLogin } from './components/adminLogin.js';
+import { renderAccessDenied } from './components/accessDenied.js';
+
+class Router {
+  constructor() {
+    this.mainContainer = null;
+  }
+
+  init(container) {
+    this.mainContainer = container;
+    window.addEventListener('hashchange', () => this.handleRoute());
+    this.handleRoute();
+  }
+
+  handleRoute() {
+    const rawHash = window.location.hash.slice(1) || 'welcome';
+    const [pathPart, queryPart] = rawHash.split('?');
+    const queryParams = new URLSearchParams(queryPart || '');
+    const paramsObj = Object.fromEntries(queryParams.entries());
+
+    // Scroll to top smoothly on route navigation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Route matching with RBAC Guard
+    if (pathPart === 'welcome' || pathPart === '') {
+      renderWelcomePage(this.mainContainer);
+    } else if (pathPart === 'store') {
+      renderStorePage(this.mainContainer, paramsObj);
+    } else if (pathPart.startsWith('product/')) {
+      const productId = pathPart.replace('product/', '');
+      renderProductDetails(this.mainContainer, productId);
+    } else if (pathPart === 'checkout-address') {
+      renderCheckoutAddress(this.mainContainer);
+    } else if (pathPart === 'checkout-payment') {
+      renderCheckoutPayment(this.mainContainer);
+    } else if (pathPart.startsWith('order-confirmed/')) {
+      const orderId = pathPart.replace('order-confirmed/', '');
+      renderOrderConfirmed(this.mainContainer, orderId);
+    } else if (pathPart.startsWith('order-tracking/')) {
+      const orderId = pathPart.replace('order-tracking/', '');
+      renderOrderTracking(this.mainContainer, orderId);
+    } else if (pathPart === 'my-orders') {
+      renderMyOrders(this.mainContainer);
+    } else if (pathPart === 'admin-login' || pathPart === 'owner-login') {
+      renderAdminLogin(this.mainContainer);
+    } else if (pathPart === 'admin') {
+      // 🔒 STRICT RBAC GUARD:
+      if (auth.isAdmin()) {
+        renderAdminDashboard(this.mainContainer, paramsObj);
+      } else if (!auth.isAuthenticated()) {
+        // If not signed in, show the Admin Login portal directly
+        renderAdminLogin(this.mainContainer);
+      } else {
+        // If signed in as normal customer (non-admin), show 403 Forbidden Access Denied
+        renderAccessDenied(this.mainContainer);
+      }
+    } else {
+      renderWelcomePage(this.mainContainer);
+    }
+  }
+
+  navigate(hash) {
+    window.location.hash = hash;
+  }
+}
+
+export const router = new Router();

@@ -1,0 +1,17 @@
+{
+  "name": "lapkart-ecommerce",
+  "version": "2.0.0",
+  "description": "Flipkart-style laptop-only e-commerce platform with RBAC, Express REST backend, and real-time tracking.",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "test": "node scratch/test_backend_api.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
