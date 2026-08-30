@@ -94,23 +94,11 @@ export async function renderUserDashboard(container) {
     <div class="user-dashboard-wrapper" style="background: #f8fafc; min-height: 80vh; padding: 2rem 0 4rem;">
       <div class="container" style="max-width: 1200px;">
         
-        <!-- Header Strip with Back Navigation & Continue Shopping -->
-        <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <a href="#store" class="btn btn-outline-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px; padding: 0.5rem 1.1rem;">
-              ← Continue Shopping
-            </a>
-            <div>
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0;">My Account & Orders</h2>
-              <span style="font-size: 0.82rem; color: #64748b;">${user.name} (${user.email})</span>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 0.75rem; align-items: center;">
-            <button type="button" id="btn-user-logout" class="btn btn-outline" style="color: #ef4444; border-color: #fca5a5; font-weight: 700; border-radius: 8px; padding: 0.5rem 1rem;">
-              🚪 Logout
-            </button>
-          </div>
+        <!-- Continue Shopping Navigation -->
+        <div style="margin-bottom: 1.5rem;">
+          <a href="#store" class="btn btn-outline-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px; padding: 0.5rem 1.25rem; background: #ffffff; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            ← Continue Shopping
+          </a>
         </div>
 
         <!-- Dashboard Grid Layout -->
