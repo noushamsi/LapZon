@@ -94,12 +94,9 @@ class Router {
       // 🔒 STRICT RBAC GUARD:
       if (auth.isAdmin()) {
         renderAdminDashboard(this.mainContainer, paramsObj);
-      } else if (!auth.isAuthenticated()) {
-        // If not signed in, show the Admin Login portal directly
-        renderAdminLogin(this.mainContainer);
       } else {
-        // If signed in as normal customer (non-admin), show 403 Forbidden Access Denied
-        renderAccessDenied(this.mainContainer);
+        // If not signed in as admin, show the Admin Login portal directly
+        renderAdminLogin(this.mainContainer);
       }
     } else {
       renderWelcomePage(this.mainContainer);
@@ -107,7 +104,11 @@ class Router {
   }
 
   navigate(hash) {
-    window.location.hash = hash;
+    if (window.location.hash === hash) {
+      this.handleRoute();
+    } else {
+      window.location.hash = hash;
+    }
   }
 }
 

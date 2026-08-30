@@ -6,11 +6,12 @@
 import { api } from '../services/api.js';
 import { auth } from '../services/auth.js';
 import { showToast } from '../app.js';
+import { router } from '../router.js';
 
 export function renderAdminLogin(container) {
   // If already logged in as Admin, redirect directly to dashboard
   if (auth.isAdmin()) {
-    window.location.hash = '#admin';
+    router.navigate('#admin');
     return;
   }
 
@@ -119,7 +120,7 @@ function attachAdminLoginEvents(container) {
 
         auth.setSession(res.token, res.user);
         showToast(`Authentication verified! Welcome Admin, ${res.user.name}.`, 'success');
-        window.location.hash = '#admin';
+        router.navigate('#admin');
       } catch (err) {
         errorAlert.textContent = err.message || 'Login failed. Please verify email and password.';
         errorAlert.style.display = 'block';
