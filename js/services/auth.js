@@ -3,30 +3,49 @@
  * Manages JWT tokens, user roles, login state, and role checks.
  */
 
-const CUST_TOKEN_KEY = 'lapkart_customer_token_v3';
-const CUST_USER_KEY = 'lapkart_customer_user_v3';
-const ADMIN_TOKEN_KEY = 'lapkart_admin_token_v3';
-const ADMIN_USER_KEY = 'lapkart_admin_user_v3';
+const CUST_TOKEN_KEY = 'lapkart_customer_token_v4';
+const CUST_USER_KEY = 'lapkart_customer_user_v4';
+const ADMIN_TOKEN_KEY = 'lapkart_admin_token_v4';
+const ADMIN_USER_KEY = 'lapkart_admin_user_v4';
 
 const safeStorage = {
   getItem: (k) => {
     try {
-      return typeof localStorage !== 'undefined' ? localStorage.getItem(k) : null;
+      if (typeof sessionStorage !== 'undefined') {
+        const sVal = sessionStorage.getItem(k);
+        if (sVal) return sVal;
+      }
+      return null;
     } catch {
       return null;
     }
   },
   setItem: (k, v) => {
     try {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(k, v);
+      if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(k, v);
     } catch {}
   },
   removeItem: (k) => {
+    try {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(k);
+    } catch {}
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem(k);
     } catch {}
   }
 };
+
+// Purge any stale permanent local storage tokens on initialization
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('lapkart_customer_token_v3');
+    localStorage.removeItem('lapkart_customer_user_v3');
+    localStorage.removeItem('lapkart_customer_token_v2');
+    localStorage.removeItem('lapkart_customer_user_v2');
+    localStorage.removeItem('lapkart_auth_token_v2');
+    localStorage.removeItem('lapkart_auth_user_v2');
+  }
+} catch {}
 
 class AuthService {
   constructor() {
