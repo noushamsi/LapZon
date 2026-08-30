@@ -5,7 +5,9 @@
 
 import { api } from '../services/api.js';
 import { state } from '../state.js';
+import { auth } from '../services/auth.js';
 import { showToast } from '../app.js';
+import { openAuthModal } from './authModal.js';
 
 export async function renderStorePage(container, queryParams = {}) {
   let activeSearch = queryParams.q ? decodeURIComponent(queryParams.q) : '';
@@ -121,6 +123,8 @@ export async function renderStorePage(container, queryParams = {}) {
     return products;
   }
 
+  let showFilters = false;
+
   function renderLayout() {
     if (isLoading) {
       container.innerHTML = `
@@ -136,155 +140,190 @@ export async function renderStorePage(container, queryParams = {}) {
     const products = getFilteredProducts();
     const wishlist = state.getWishlist();
 
+    let activeFilterCount = 0;
+    if (selectedBrands.length > 0) activeFilterCount += selectedBrands.length;
+    if (selectedProcessors.length > 0) activeFilterCount += selectedProcessors.length;
+    if (selectedRams.length > 0) activeFilterCount += selectedRams.length;
+    if (selectedScreenSizes.length > 0) activeFilterCount += selectedScreenSizes.length;
+    if (minRating > 0) activeFilterCount += 1;
+    if (maxPrice < 250000) activeFilterCount += 1;
+    if (inStockOnly) activeFilterCount += 1;
+
     container.innerHTML = `
       <div class="store-page">
         <div class="container">
-          <div class="store-layout">
+          
+          <!-- Top Filter & Search Toolbar -->
+          <div class="catalog-toolbar" style="margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+              <button type="button" class="btn ${showFilters ? 'btn-primary' : 'btn-outline'}" id="btn-toggle-filters" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 0.45rem 1.1rem; border-radius: 8px; cursor: pointer;">
+                <span>⚡ ${showFilters ? 'Hide Filters ✕' : 'Filter Laptops ▾'}</span>
+                ${activeFilterCount > 0 ? `<span class="badge" style="background: #ef4444; color: #fff; border-radius: 10px; font-size: 0.75rem; padding: 2px 7px; font-weight: 800;">${activeFilterCount}</span>` : ''}
+              </button>
+
+              <div class="results-count">
+                Showing <strong>${products.length}</strong> laptops
+                ${activeCategory !== 'All' ? ` in <em>${activeCategory}</em>` : ''}
+                ${activeSearch ? ` matching "<em>${activeSearch}</em>"` : ''}
+              </div>
+            </div>
+
+            <!-- Sorting Bar -->
+            <div class="sorting-group">
+              <span class="sort-label">Sort By:</span>
+              <div class="sort-tabs">
+                <button class="sort-tab-btn ${activeSort === 'featured' ? 'active' : ''}" data-sort="featured">Popularity</button>
+                <button class="sort-tab-btn ${activeSort === 'price-asc' ? 'active' : ''}" data-sort="price-asc">Price: Low to High</button>
+                <button class="sort-tab-btn ${activeSort === 'price-desc' ? 'active' : ''}" data-sort="price-desc">Price: High to Low</button>
+                <button class="sort-tab-btn ${activeSort === 'rating' ? 'active' : ''}" data-sort="rating">Rating</button>
+                <button class="sort-tab-btn ${activeSort === 'discount' ? 'active' : ''}" data-sort="discount">Discount</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Filter Chips -->
+          ${activeFilterCount > 0 ? `
+            <div class="active-filters-bar" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center;">
+              <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 700;">Active Filters:</span>
+              ${selectedBrands.map(b => `<span class="filter-pill">${b} <button type="button" data-remove-filter="brand" data-val="${b}">✕</button></span>`).join('')}
+              ${selectedProcessors.map(p => `<span class="filter-pill">${p} <button type="button" data-remove-filter="proc" data-val="${p}">✕</button></span>`).join('')}
+              ${selectedRams.map(r => `<span class="filter-pill">${r} <button type="button" data-remove-filter="ram" data-val="${r}">✕</button></span>`).join('')}
+              ${selectedScreenSizes.map(s => `<span class="filter-pill">${s} <button type="button" data-remove-filter="screen" data-val="${s}">✕</button></span>`).join('')}
+              ${minRating > 0 ? `<span class="filter-pill">${minRating}★+ <button type="button" data-remove-filter="rating">✕</button></span>` : ''}
+              ${maxPrice < 250000 ? `<span class="filter-pill">≤ ${formatPrice(maxPrice)} <button type="button" data-remove-filter="price">✕</button></span>` : ''}
+              ${inStockOnly ? `<span class="filter-pill">In Stock Only <button type="button" data-remove-filter="stock">✕</button></span>` : ''}
+              <button type="button" class="btn-clear-filters" id="btn-clear-all-chips" style="margin-left: 6px; font-weight: 700;">Clear All Filters</button>
+            </div>
+          ` : ''}
+
+          <div class="store-layout" style="${showFilters ? 'display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem;' : 'display: block;'}">
             <!-- Sidebar Filter Panel -->
-            <aside class="filters-sidebar">
-              <div class="filter-header">
-                <h3>Filters</h3>
-                <button type="button" class="btn-clear-filters" id="btn-reset-filters">CLEAR ALL</button>
-              </div>
-
-              <!-- Stock Availability Toggle -->
-              <div class="filter-section">
-                <div class="stock-toggle-box">
-                  <span>In Stock Only</span>
-                  <input type="checkbox" id="filter-stock-toggle" ${inStockOnly ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;" />
+            ${showFilters ? `
+              <aside class="filters-sidebar">
+                <div class="filter-header">
+                  <h3>Filters</h3>
+                  <button type="button" class="btn-clear-filters" id="btn-reset-filters">CLEAR ALL</button>
                 </div>
-              </div>
 
-              <!-- Price Filter Slider -->
-              <div class="filter-section">
-                <div class="filter-title">
-                  <span>Price Range</span>
-                </div>
-                <div class="price-slider-wrap">
-                  <input 
-                    type="range" 
-                    id="price-range-slider" 
-                    min="30000" 
-                    max="250000" 
-                    step="5000" 
-                    value="${maxPrice}"
-                  />
-                  <div class="price-labels">
-                    <span>Min: ₹30,000</span>
-                    <strong id="price-slider-val">Max: ${formatPrice(maxPrice)}</strong>
+                <!-- Stock Availability Toggle -->
+                <div class="filter-section">
+                  <div class="stock-toggle-box">
+                    <span>In Stock Only</span>
+                    <input type="checkbox" id="filter-stock-toggle" ${inStockOnly ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer;" />
                   </div>
                 </div>
-              </div>
 
-              <!-- Brand Filter -->
-              <div class="filter-section">
-                <div class="filter-title">Brand</div>
-                <div class="filter-options-list">
-                  ${['Apple', 'ASUS', 'Dell', 'HP', 'Lenovo', 'Acer', 'MSI', 'Samsung'].map(brand => `
+                <!-- Price Filter Slider -->
+                <div class="filter-section">
+                  <div class="filter-title">
+                    <span>Price Range</span>
+                  </div>
+                  <div class="price-slider-wrap">
+                    <input 
+                      type="range" 
+                      id="price-range-slider" 
+                      min="30000" 
+                      max="250000" 
+                      step="5000" 
+                      value="${maxPrice}"
+                    />
+                    <div class="price-labels">
+                      <span>Min: ₹30,000</span>
+                      <strong id="price-slider-val">Max: ${formatPrice(maxPrice)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Brand Filter -->
+                <div class="filter-section">
+                  <div class="filter-title">Brand</div>
+                  <div class="filter-options-list">
+                    ${['Apple', 'ASUS', 'Dell', 'HP', 'Lenovo', 'Acer', 'MSI', 'Samsung'].map(brand => `
+                      <label class="filter-checkbox-label">
+                        <input type="checkbox" class="filter-brand-chk" value="${brand}" ${selectedBrands.includes(brand) ? 'checked' : ''}>
+                        <span>${brand}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Processor Filter -->
+                <div class="filter-section">
+                  <div class="filter-title">Processor</div>
+                  <div class="filter-options-list">
+                    ${[
+                      { label: 'Apple M3 / M3 Pro', val: 'M3' },
+                      { label: 'Intel Core Ultra 7', val: 'Core Ultra' },
+                      { label: 'Intel Core i9', val: 'i9' },
+                      { label: 'Intel Core i7', val: 'i7' },
+                      { label: 'Intel Core i5', val: 'i5' },
+                      { label: 'Intel Core i3', val: 'i3' },
+                      { label: 'AMD Ryzen 7', val: 'Ryzen 7' },
+                      { label: 'AMD Ryzen 5', val: 'Ryzen 5' }
+                    ].map(p => `
+                      <label class="filter-checkbox-label">
+                        <input type="checkbox" class="filter-proc-chk" value="${p.val}" ${selectedProcessors.includes(p.val) ? 'checked' : ''}>
+                        <span>${p.label}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- RAM Filter -->
+                <div class="filter-section">
+                  <div class="filter-title">RAM Capacity</div>
+                  <div class="filter-options-list">
+                    ${['8GB', '16GB', '18GB', '32GB'].map(ram => `
+                      <label class="filter-checkbox-label">
+                        <input type="checkbox" class="filter-ram-chk" value="${ram}" ${selectedRams.includes(ram) ? 'checked' : ''}>
+                        <span>${ram}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Screen Size -->
+                <div class="filter-section">
+                  <div class="filter-title">Screen Size</div>
+                  <div class="filter-options-list">
                     <label class="filter-checkbox-label">
-                      <input type="checkbox" class="filter-brand-chk" value="${brand}" ${selectedBrands.includes(brand) ? 'checked' : ''}>
-                      <span>${brand}</span>
+                      <input type="checkbox" class="filter-screen-chk" value="compact" ${selectedScreenSizes.includes('compact') ? 'checked' : ''}>
+                      <span>13" to 14.2" (Compact)</span>
                     </label>
-                  `).join('')}
-                </div>
-              </div>
-
-              <!-- Processor Filter -->
-              <div class="filter-section">
-                <div class="filter-title">Processor</div>
-                <div class="filter-options-list">
-                  ${[
-                    { label: 'Apple M3 / M3 Pro', val: 'M3' },
-                    { label: 'Intel Core Ultra 7', val: 'Core Ultra' },
-                    { label: 'Intel Core i9', val: 'i9' },
-                    { label: 'Intel Core i7', val: 'i7' },
-                    { label: 'Intel Core i5', val: 'i5' },
-                    { label: 'Intel Core i3', val: 'i3' },
-                    { label: 'AMD Ryzen 7', val: 'Ryzen 7' },
-                    { label: 'AMD Ryzen 5', val: 'Ryzen 5' }
-                  ].map(p => `
                     <label class="filter-checkbox-label">
-                      <input type="checkbox" class="filter-proc-chk" value="${p.val}" ${selectedProcessors.includes(p.val) ? 'checked' : ''}>
-                      <span>${p.label}</span>
+                      <input type="checkbox" class="filter-screen-chk" value="standard" ${selectedScreenSizes.includes('standard') ? 'checked' : ''}>
+                      <span>15.6" (Standard Workspace)</span>
                     </label>
-                  `).join('')}
-                </div>
-              </div>
-
-              <!-- RAM Filter -->
-              <div class="filter-section">
-                <div class="filter-title">RAM Capacity</div>
-                <div class="filter-options-list">
-                  ${['8GB', '16GB', '18GB', '32GB'].map(ram => `
                     <label class="filter-checkbox-label">
-                      <input type="checkbox" class="filter-ram-chk" value="${ram}" ${selectedRams.includes(ram) ? 'checked' : ''}>
-                      <span>${ram}</span>
+                      <input type="checkbox" class="filter-screen-chk" value="large" ${selectedScreenSizes.includes('large') ? 'checked' : ''}>
+                      <span>16" to 17.3" (Large Display)</span>
                     </label>
-                  `).join('')}
+                  </div>
                 </div>
-              </div>
 
-              <!-- Screen Size -->
-              <div class="filter-section">
-                <div class="filter-title">Screen Size</div>
-                <div class="filter-options-list">
-                  <label class="filter-checkbox-label">
-                    <input type="checkbox" class="filter-screen-chk" value="compact" ${selectedScreenSizes.includes('compact') ? 'checked' : ''}>
-                    <span>13" to 14.2" (Compact)</span>
-                  </label>
-                  <label class="filter-checkbox-label">
-                    <input type="checkbox" class="filter-screen-chk" value="standard" ${selectedScreenSizes.includes('standard') ? 'checked' : ''}>
-                    <span>15.6" (Standard Workspace)</span>
-                  </label>
-                  <label class="filter-checkbox-label">
-                    <input type="checkbox" class="filter-screen-chk" value="large" ${selectedScreenSizes.includes('large') ? 'checked' : ''}>
-                    <span>16" to 17.3" (Large Display)</span>
-                  </label>
+                <!-- Customer Rating Filter -->
+                <div class="filter-section">
+                  <div class="filter-title">Customer Ratings</div>
+                  <div class="filter-options-list">
+                    <label class="filter-checkbox-label">
+                      <input type="radio" name="rating-radio" class="filter-rating-radio" value="4.5" ${minRating === 4.5 ? 'checked' : ''}>
+                      <span>4.5★ & above</span>
+                    </label>
+                    <label class="filter-checkbox-label">
+                      <input type="radio" name="rating-radio" class="filter-rating-radio" value="4.0" ${minRating === 4.0 ? 'checked' : ''}>
+                      <span>4.0★ & above</span>
+                    </label>
+                    <label class="filter-checkbox-label">
+                      <input type="radio" name="rating-radio" class="filter-rating-radio" value="0" ${minRating === 0 ? 'checked' : ''}>
+                      <span>All Ratings</span>
+                    </label>
+                  </div>
                 </div>
-              </div>
-
-              <!-- Customer Rating Filter -->
-              <div class="filter-section">
-                <div class="filter-title">Customer Ratings</div>
-                <div class="filter-options-list">
-                  <label class="filter-checkbox-label">
-                    <input type="radio" name="rating-radio" class="filter-rating-radio" value="4.5" ${minRating === 4.5 ? 'checked' : ''}>
-                    <span>4.5★ & above</span>
-                  </label>
-                  <label class="filter-checkbox-label">
-                    <input type="radio" name="rating-radio" class="filter-rating-radio" value="4.0" ${minRating === 4.0 ? 'checked' : ''}>
-                    <span>4.0★ & above</span>
-                  </label>
-                  <label class="filter-checkbox-label">
-                    <input type="radio" name="rating-radio" class="filter-rating-radio" value="0" ${minRating === 0 ? 'checked' : ''}>
-                    <span>All Ratings</span>
-                  </label>
-                </div>
-              </div>
-            </aside>
+              </aside>
+            ` : ''}
 
             <!-- Main Catalog Area -->
-            <main class="catalog-main">
-              <!-- Top Toolbar -->
-              <div class="catalog-toolbar">
-                <div class="results-count">
-                  Showing <strong>${products.length}</strong> laptops
-                  ${activeCategory !== 'All' ? ` in <em>${activeCategory}</em>` : ''}
-                  ${activeSearch ? ` matching "<em>${activeSearch}</em>"` : ''}
-                </div>
-
-                <!-- Sorting Bar -->
-                <div class="sorting-group">
-                  <span class="sort-label">Sort By:</span>
-                  <div class="sort-tabs">
-                    <button class="sort-tab-btn ${activeSort === 'featured' ? 'active' : ''}" data-sort="featured">Popularity</button>
-                    <button class="sort-tab-btn ${activeSort === 'price-asc' ? 'active' : ''}" data-sort="price-asc">Price -- Low to High</button>
-                    <button class="sort-tab-btn ${activeSort === 'price-desc' ? 'active' : ''}" data-sort="price-desc">Price -- High to Low</button>
-                    <button class="sort-tab-btn ${activeSort === 'rating' ? 'active' : ''}" data-sort="rating">Customer Rating</button>
-                    <button class="sort-tab-btn ${activeSort === 'discount' ? 'active' : ''}" data-sort="discount">Discount</button>
-                  </div>
-                </div>
-              </div>
+            <main class="catalog-main" style="width: 100%;">
 
               <!-- Product List Grid -->
               ${products.length === 0 ? `
@@ -408,6 +447,45 @@ export async function renderStorePage(container, queryParams = {}) {
   }
 
   function attachStoreEvents() {
+    // 0. Toggle Filters Drawer / Sidebar
+    const toggleFiltersBtn = container.querySelector('#btn-toggle-filters');
+    if (toggleFiltersBtn) {
+      toggleFiltersBtn.addEventListener('click', () => {
+        showFilters = !showFilters;
+        renderLayout();
+      });
+    }
+
+    // 0.1 Remove individual filter chips
+    container.querySelectorAll('[data-remove-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.removeFilter;
+        const val = btn.dataset.val;
+        if (type === 'brand') selectedBrands = selectedBrands.filter(b => b !== val);
+        else if (type === 'proc') selectedProcessors = selectedProcessors.filter(p => p !== val);
+        else if (type === 'ram') selectedRams = selectedRams.filter(r => r !== val);
+        else if (type === 'screen') selectedScreenSizes = selectedScreenSizes.filter(s => s !== val);
+        else if (type === 'rating') minRating = 0;
+        else if (type === 'price') maxPrice = 250000;
+        else if (type === 'stock') inStockOnly = false;
+        renderLayout();
+      });
+    });
+
+    const clearChipsBtn = container.querySelector('#btn-clear-all-chips');
+    if (clearChipsBtn) {
+      clearChipsBtn.addEventListener('click', () => {
+        selectedBrands = [];
+        selectedProcessors = [];
+        selectedRams = [];
+        selectedScreenSizes = [];
+        minRating = 0;
+        maxPrice = 250000;
+        inStockOnly = false;
+        renderLayout();
+      });
+    }
+
     // 1. Reset Filters
     const resetBtn = container.querySelector('#btn-reset-filters');
     const emptyResetBtn = container.querySelector('#btn-empty-reset');
@@ -522,7 +600,14 @@ export async function renderStorePage(container, queryParams = {}) {
           return;
         }
         state.addToCart(productId, 1, product);
-        window.location.hash = '#checkout-address';
+        if (!auth.isAuthenticated()) {
+          openAuthModal('login', {
+            redirectHash: '#checkout-address',
+            subtitle: 'Please sign in or create an account to proceed with your laptop order'
+          });
+        } else {
+          window.location.hash = '#checkout-address';
+        }
       } else if (action === 'wishlist') {
         const added = state.toggleWishlist(productId);
         api.toggleWishlist(productId).catch(() => {});

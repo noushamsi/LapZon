@@ -9,6 +9,7 @@ import { api } from '../services/api.js';
 import { state } from '../state.js';
 import { auth } from '../services/auth.js';
 import { showToast } from '../app.js';
+import { openAuthModal } from './authModal.js';
 
 export async function renderProductDetails(container, productId) {
   let product = null;
@@ -208,18 +209,6 @@ export async function renderProductDetails(container, productId) {
               </button>
             </div>
 
-            <!-- Delivery Pincode Check Simulator -->
-            <div class="pdp-delivery-check-box">
-              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">Delivery to:</span>
-              <div class="pincode-input-group">
-                <input type="text" id="pdp-pincode-input" placeholder="Enter Delivery Pincode" maxlength="6" value="560038" />
-                <button type="button" class="btn btn-sm btn-primary" id="btn-check-pincode">Check</button>
-              </div>
-              <div id="pincode-check-result" style="font-size: 0.85rem; color: var(--accent-emerald); font-weight: 600; margin-top: 6px;">
-                🚚 Free Express Delivery by <strong>Tomorrow</strong> | Cash on Delivery & Open Box Verification Eligible.
-              </div>
-            </div>
-
             <!-- Product Description Overview -->
             <div class="pdp-description-section">
               <h3>Product Overview</h3>
@@ -408,12 +397,19 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     });
   }
 
-  // 3. Buy Now Button (Direct checkout flow with product object)
+  // 3. Buy Now Button (Direct checkout flow with authentication guard)
   const buyNowBtn = container.querySelector('#pdp-btn-buy-now');
   if (buyNowBtn) {
     buyNowBtn.addEventListener('click', () => {
       state.addToCart(product.id, 1, product);
-      window.location.hash = '#checkout-address';
+      if (!auth.isAuthenticated()) {
+        openAuthModal('login', {
+          redirectHash: '#checkout-address',
+          subtitle: 'Please sign in or create an account to proceed with your laptop order'
+        });
+      } else {
+        window.location.hash = '#checkout-address';
+      }
     });
   }
 
@@ -494,25 +490,6 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
       } else {
         if (copyLinkBtn) copyLinkBtn.click();
       }
-    });
-  }
-
-  // 6. Pincode checker
-  const checkPinBtn = container.querySelector('#btn-check-pincode');
-  const pinInput = container.querySelector('#pdp-pincode-input');
-  const resultDiv = container.querySelector('#pincode-check-result');
-
-  if (checkPinBtn && pinInput && resultDiv) {
-    checkPinBtn.addEventListener('click', () => {
-      const pin = pinInput.value.trim();
-      if (!/^\d{6}$/.test(pin)) {
-        resultDiv.style.color = '#ef4444';
-        resultDiv.textContent = '❌ Please enter a valid 6-digit Indian delivery pincode.';
-        return;
-      }
-      resultDiv.style.color = 'var(--accent-emerald)';
-      resultDiv.innerHTML = `🚚 Express Delivery available to PIN <strong>${pin}</strong> by <strong>Tomorrow</strong> | Cash on Delivery & Open Box Verification Eligible.`;
-      showToast('Delivery serviceability confirmed for pincode ' + pin, 'success');
     });
   }
 }

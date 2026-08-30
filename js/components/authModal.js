@@ -8,9 +8,11 @@ import { auth } from '../services/auth.js';
 import { showToast } from '../app.js';
 
 let activeTab = 'login'; // 'login' | 'register' | 'forgot'
+let authOptions = {}; // { redirectHash, subtitle, onSuccess }
 
-export function openAuthModal(initialTab = 'login') {
+export function openAuthModal(initialTab = 'login', options = {}) {
   activeTab = initialTab;
+  authOptions = options || {};
   let overlay = document.getElementById('auth-modal-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -34,6 +36,14 @@ function renderAuthModalContent() {
   const overlay = document.getElementById('auth-modal-overlay');
   if (!overlay) return;
 
+  const customSubtitle = authOptions.subtitle || (
+    activeTab === 'login' 
+      ? 'Sign in to access your orders, wishlist & discounts' 
+      : activeTab === 'register' 
+        ? 'Create an account for personalized laptop shopping' 
+        : 'Reset your account password'
+  );
+
   overlay.innerHTML = `
     <div class="modal-card auth-modal-card" style="max-width: 440px; width: 90%; background: #ffffff; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); position: relative; animation: modalPop 0.25s ease-out;">
       <button type="button" class="modal-close-btn" id="btn-close-auth-modal" style="position: absolute; top: 1rem; right: 1rem; background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; color: #64748b; display: flex; align-items: center; justify-content: center;">✕</button>
@@ -43,7 +53,7 @@ function renderAuthModalContent() {
         <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #2874f0, #1e40af); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #fff; margin-bottom: 0.5rem;">⚡</div>
         <h3 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin: 0;">LapKart Plus</h3>
         <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem;">
-          ${activeTab === 'login' ? 'Sign in to access your orders, wishlist & discounts' : activeTab === 'register' ? 'Create an account for personalized laptop shopping' : 'Reset your account password'}
+          ${customSubtitle}
         </p>
       </div>
 
@@ -155,14 +165,21 @@ function attachModalEvents() {
           auth.setSession(res.token, res.user);
           showToast(`Welcome back, ${res.user.name}! 👋`, 'success');
           closeAuthModal();
+          if (authOptions.onSuccess) authOptions.onSuccess(res.user);
           if (res.user.role === 'admin') {
             window.location.hash = '#admin';
+          } else if (authOptions.redirectHash) {
+            window.location.hash = authOptions.redirectHash;
           }
         } else if (activeTab === 'register') {
           const res = await api.register(name, email, pass);
           auth.setSession(res.token, res.user);
           showToast(`Account created! Welcome to LapKart Plus, ${res.user.name} 🎉`, 'success');
           closeAuthModal();
+          if (authOptions.onSuccess) authOptions.onSuccess(res.user);
+          if (authOptions.redirectHash) {
+            window.location.hash = authOptions.redirectHash;
+          }
         } else if (activeTab === 'forgot') {
           const res = await api.resetPassword(email, pass);
           showToast(res.message || 'Password updated! Please sign in with your new password.', 'success');

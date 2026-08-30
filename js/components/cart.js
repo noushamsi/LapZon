@@ -6,6 +6,8 @@
 import { state } from '../state.js';
 import { showToast } from '../app.js';
 import { api } from '../services/api.js';
+import { auth } from '../services/auth.js';
+import { openAuthModal } from './authModal.js';
 
 let appliedCoupon = null;
 let couponDiscount = 0;
@@ -254,7 +256,14 @@ function attachCartEvents() {
     if (checkoutBtn) {
       checkoutBtn.addEventListener('click', () => {
         closeCart();
-        window.location.hash = '#checkout-address';
+        if (!auth.isAuthenticated()) {
+          openAuthModal('login', {
+            redirectHash: '#checkout-address',
+            subtitle: 'Please sign in or create an account to proceed with your order'
+          });
+        } else {
+          window.location.hash = '#checkout-address';
+        }
       });
     }
   }
