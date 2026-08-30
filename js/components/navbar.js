@@ -54,11 +54,7 @@ export function renderNavbar() {
                 <button type="button" class="nav-link-btn btn-logout-owner" id="nav-logout-btn" style="background: #ef4444; color: #fff; font-weight: 700; padding: 0.45rem 1rem;">
                   🚪 Logout
                 </button>
-              ` : `
-                <a href="#store" class="nav-link-btn" style="background: rgba(255,255,255,0.15); color: #fff; font-weight: 700; border-radius: 8px; padding: 0.45rem 1.1rem; text-decoration: none;">
-                  ← Back to Customer Store
-                </a>
-              `}
+              ` : ''}
             </div>
           </div>
         </div>
