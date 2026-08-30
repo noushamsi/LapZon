@@ -85,14 +85,6 @@ function renderAuthModalContent() {
           ${activeTab === 'login' ? 'Sign In to Account' : activeTab === 'register' ? 'Create Customer Account' : 'Reset Password'}
         </button>
       </form>
-
-      <!-- Bottom Hint / Owner Login switch -->
-      <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 1rem; font-size: 0.82rem; color: #64748b;">
-        <span>Store Administrator / Owner?</span>
-        <a href="#admin-login" id="auth-admin-login-link" style="color: #0f172a; font-weight: 800; text-decoration: none; margin-left: 4px;">
-          Owner Login ➔
-        </a>
-      </div>
     </div>
   `;
 

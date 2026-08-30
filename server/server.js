@@ -154,13 +154,27 @@ app.post('/api/orders', optionalAuth, (req, res) => {
   }
 
   const userId = req.user ? req.user.id : null;
-  const order = db.createOrder({ userId, customer, items, pricing, paymentMethod });
+  const customerData = {
+    ...customer,
+    userId: userId || customer.userId || null,
+    email: customer.email || (req.user ? req.user.email : null)
+  };
+  const order = db.createOrder({ userId, customer: customerData, items, pricing, paymentMethod });
 
   return res.status(201).json({
     success: true,
     message: 'Order placed successfully!',
     order
   });
+});
+
+// Get user orders or public orders
+app.get('/api/orders', optionalAuth, (req, res) => {
+  if (req.user) {
+    const orders = db.getUserOrders(req.user.id, req.user.email);
+    return res.json({ success: true, orders });
+  }
+  return res.json({ success: true, orders: [] });
 });
 
 // Get single order for live tracking

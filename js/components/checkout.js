@@ -5,6 +5,7 @@
  */
 
 import { api } from '../services/api.js';
+import { auth } from '../services/auth.js';
 import { state } from '../state.js';
 import { showToast } from '../app.js';
 import { getAppliedCoupon } from './cart.js';
@@ -269,7 +270,7 @@ function attachAddressEvents(container) {
   }
 
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       let isValid = true;
@@ -323,7 +324,7 @@ function attachAddressEvents(container) {
         return;
       }
 
-      state.addAddress({
+      const addressData = {
         fullName,
         phone,
         houseNo,
@@ -332,7 +333,17 @@ function attachAddressEvents(container) {
         city,
         state: stateVal,
         addressType
-      });
+      };
+
+      const savedLocal = state.addAddress(addressData);
+      state.setActiveAddress(savedLocal);
+
+      // Save to backend if user is logged in
+      try {
+        await api.addUserAddress(addressData);
+      } catch (err) {
+        console.warn('Address saved to local session:', err);
+      }
 
       showToast('Delivery address saved!', 'success');
       window.location.hash = '#checkout-payment';
@@ -526,13 +537,15 @@ function attachPaymentEvents(container, totals) {
     placeOrderBtn.disabled = true;
     placeOrderBtn.textContent = 'Placing Order & Reserving Laptop...';
 
-    const cart = state.getCart();
-    const activeAddress = state.getActiveAddress();
-    const { couponCode, discount: couponDiscount } = getAppliedCoupon();
-    const finalTotals = state.getCartTotals(couponDiscount);
+    const user = auth.getUser();
+    const customerInfo = {
+      ...activeAddress,
+      userId: user?.id || null,
+      email: user?.email || activeAddress.email || null
+    };
 
     const orderPayload = {
-      customer: activeAddress,
+      customer: customerInfo,
       items: cart,
       pricing: {
         itemsTotal: finalTotals.mrpTotal,

@@ -317,29 +317,32 @@ export async function renderStorePage(container, queryParams = {}) {
                           </button>
                         </div>
 
-                        <!-- Col 2: Specifications & Rating -->
-                        <div class="product-card-info-col">
+                        <!-- Col 2: Name, Rating & Key Highlights -->
+                        <div class="product-card-info-col" data-action="quickview" data-id="${product.id}" style="cursor: pointer;">
                           <div class="product-title-row">
-                            <h3 class="product-title" data-action="quickview" data-id="${product.id}">
+                            <h3 class="product-title" data-action="quickview" data-id="${product.id}" style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0 0 0.4rem; line-height: 1.35;">
                               ${product.name}
                             </h3>
                           </div>
 
-                          <div class="product-ratings-row">
-                            <span class="badge badge-rating">${product.rating || 4.5} ★</span>
-                            <span class="reviews-text">(${Number(product.reviewsCount || 100).toLocaleString('en-IN')} Ratings & Reviews)</span>
-                            <span class="badge badge-assured">⚡ Assured</span>
-                            ${product.tag ? `<span class="badge badge-tag">${product.tag}</span>` : ''}
+                          <div class="product-ratings-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                            <span class="badge badge-rating" style="background: #16a34a; color: #fff; font-weight: 800; font-size: 0.82rem; padding: 2px 8px; border-radius: 4px;">${product.rating || 4.5} ★</span>
+                            <span class="reviews-text" style="font-size: 0.82rem; color: #64748b; font-weight: 600;">(${Number(product.reviewsCount || 120).toLocaleString('en-IN')} Ratings & Reviews)</span>
+                            <span class="badge badge-assured" style="background: #2563eb; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">⚡ Assured</span>
+                            ${product.tag ? `<span class="badge badge-tag" style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">${product.tag}</span>` : ''}
                           </div>
 
-                          <ul class="product-specs-list" data-action="quickview" data-id="${product.id}">
-                            <li><strong>Processor:</strong> ${product.processor}</li>
-                            <li><strong>RAM & Storage:</strong> ${product.ram} RAM | ${product.storage}</li>
-                            <li><strong>Display:</strong> ${product.display}</li>
-                            <li><strong>Graphics:</strong> ${product.graphics}</li>
-                            <li><strong>OS & Battery:</strong> ${product.os} | ${product.battery || 'All-Day Battery'}</li>
-                            <li><strong>Warranty:</strong> 1 Year Onsite Warranty + 7 Days Replacement</li>
-                          </ul>
+                          <!-- Key Highlight Chips -->
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem;">
+                            <span style="background: #f1f5f9; color: #334155; font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 4px;">🚀 ${product.processor}</span>
+                            <span style="background: #f1f5f9; color: #334155; font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 4px;">⚡ ${product.ram} | ${product.storage}</span>
+                            <span style="background: #f1f5f9; color: #334155; font-size: 0.8rem; font-weight: 600; padding: 3px 8px; border-radius: 4px;">🖥️ ${product.display}</span>
+                          </div>
+
+                          <div style="font-size: 0.82rem; color: #16a34a; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                            <span>🛡️ 1 Year Warranty • 7 Days Replacement</span>
+                            <span style="color: #2874f0; margin-left: auto; font-weight: 700;">View Full Specs ➔</span>
+                          </div>
                         </div>
 
                         <!-- Col 3: Price, Stock & Buttons -->

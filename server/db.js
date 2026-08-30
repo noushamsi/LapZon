@@ -703,9 +703,13 @@ class JsonDb {
     return (db.orders || []).find(o => o.orderId === orderId) || null;
   }
 
-  getUserOrders(userId) {
+  getUserOrders(userId, email = null) {
     const db = this.readDb();
-    return (db.orders || []).filter(o => o.userId === userId);
+    return (db.orders || []).filter(o => {
+      if (userId && (o.userId === userId || o.customer?.userId === userId)) return true;
+      if (email && (o.customer?.email?.toLowerCase() === email.toLowerCase() || o.userId === email)) return true;
+      return false;
+    });
   }
 
   createOrder({ userId, customer, items, pricing, paymentMethod }) {
@@ -718,11 +722,16 @@ class JsonDb {
     expectedDelivery.setDate(expectedDelivery.getDate() + 3);
     const expectedDateStr = expectedDelivery.toISOString().split('T')[0];
 
+    const customerObj = {
+      ...(customer || {}),
+      userId: userId || customer?.userId || null
+    };
+
     const newOrder = {
       orderId,
-      userId: userId || null,
+      userId: userId || customer?.userId || null,
       createdAt: now.toISOString(),
-      customer,
+      customer: customerObj,
       items,
       pricing,
       paymentMethod: paymentMethod || 'Cash on Delivery',

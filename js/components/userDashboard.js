@@ -67,8 +67,17 @@ export async function renderUserDashboard(container) {
 
     if (ordersRes.status === 'fulfilled') {
       const allOrders = ordersRes.value?.orders || ordersRes.value || [];
-      orders = allOrders.filter(o => o.userId === user.id || o.customer?.email === user.email);
+      if (Array.isArray(allOrders) && allOrders.length > 0) {
+        orders = allOrders.filter(o => o.userId === user.id || o.customer?.email === user.email || o.customer?.userId === user.id || !o.userId);
+      }
     }
+    
+    // If API returned empty, check local state
+    if (orders.length === 0) {
+      const local = state.getOrders();
+      orders = local.filter(o => o.userId === user.id || o.customer?.email === user.email || o.customer?.userId === user.id || !o.userId);
+    }
+
     if (addrRes.status === 'fulfilled') addresses = addrRes.value?.addresses || [];
     if (wishRes.status === 'fulfilled') wishlist = wishRes.value || { products: [] };
     if (refRes.status === 'fulfilled') refData = refRes.value?.refInfo || refData;

@@ -36,10 +36,10 @@ class StateStore {
       this.setProducts(INITIAL_PRODUCTS);
     }
     if (!safeStorage.getItem(STORAGE_KEYS.ORDERS)) {
-      this.setOrders(INITIAL_ORDERS);
+      this.setOrders([]);
     }
     if (!safeStorage.getItem(STORAGE_KEYS.ADDRESSES)) {
-      this.setAddresses(SAVED_ADDRESSES);
+      this.setAddresses([]);
     }
     if (!safeStorage.getItem(STORAGE_KEYS.CART)) {
       this.setCart([]);
@@ -310,15 +310,15 @@ class StateStore {
     try {
       const raw = safeStorage.getItem(STORAGE_KEYS.ADDRESSES);
       const parsed = raw ? JSON.parse(raw) : null;
-      return (Array.isArray(parsed) && parsed.length > 0) ? parsed : SAVED_ADDRESSES;
+      return (Array.isArray(parsed)) ? parsed : [];
     } catch {
-      return SAVED_ADDRESSES;
+      return [];
     }
   }
 
   setAddresses(addresses) {
-    safeStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addresses));
-    this.notify('addresses', addresses);
+    safeStorage.setItem(STORAGE_KEYS.ADDRESSES, JSON.stringify(addresses || []));
+    this.notify('addresses', addresses || []);
   }
 
   getActiveAddress() {
@@ -353,15 +353,15 @@ class StateStore {
     try {
       const raw = safeStorage.getItem(STORAGE_KEYS.ORDERS);
       const parsed = raw ? JSON.parse(raw) : null;
-      return (Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_ORDERS;
+      return (Array.isArray(parsed)) ? parsed : [];
     } catch {
-      return INITIAL_ORDERS;
+      return [];
     }
   }
 
   setOrders(orders) {
-    safeStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    this.notify('orders', orders);
+    safeStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders || []));
+    this.notify('orders', orders || []);
   }
 
   getOrderById(orderId) {
