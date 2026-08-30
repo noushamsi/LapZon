@@ -167,6 +167,14 @@
       "name": "Vikram Sundaram",
       "email": "cust_1788100257768@test.com",
       "password": "User@123"
+    },
+    {
+      "id": "usr-mtfwrzke-1oqh",
+      "role": "user",
+      "createdAt": "2026-08-30T14:32:24.014Z",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788100343928@test.com",
+      "password": "User@123"
     }
   ],
   "products": [
@@ -243,7 +251,7 @@
     {
       "id": "lap-mtfi8jbp-ukqt",
       "rating": 5,
-      "reviewsCount": 2,
+      "reviewsCount": 3,
       "isBestSeller": false,
       "isDealOfTheDay": false,
       "tag": "Verified & Approved",
@@ -261,7 +269,7 @@
       "mrp": 299990,
       "price": 269990,
       "discount": 10,
-      "stock": 5,
+      "stock": 4,
       "inStock": true,
       "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
       "images": [
@@ -857,6 +865,98 @@
     }
   ],
   "orders": [
+    {
+      "orderId": "OD-LK-88621923",
+      "userId": "usr-mtfwrzke-1oqh",
+      "createdAt": "2026-08-30T14:32:24.864Z",
+      "customer": {
+        "id": "addr-1788100344096-jjar",
+        "userId": "usr-mtfwrzke-1oqh",
+        "isDefault": true,
+        "createdAt": "2026-08-30T14:32:24.096Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788100343928@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtfi8jbp-ukqt",
+          "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+          "price": 269990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Intel Core Ultra 9 185H"
+        }
+      ],
+      "pricing": {
+        "itemsTotal": 269990,
+        "discount": 30000,
+        "delivery": 0,
+        "totalAmount": 239990
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Paid (Cash Collected)",
+      "status": "Delivered",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-18146086IN",
+        "currentLocation": "Bengaluru Express Hub",
+        "expectedDate": "2026-09-02",
+        "deliveredAt": "2026-08-30T14:32:25.327Z"
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-08-30T14:32:24.864Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-08-30T14:32:24.988Z",
+          "completed": true,
+          "note": "Order verified and confirmed by Store Administrator."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": "2026-08-30T14:32:25.058Z",
+          "completed": true,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": "2026-08-30T14:32:25.125Z",
+          "completed": true,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": "2026-08-30T14:32:25.195Z",
+          "completed": true,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": "2026-08-30T14:32:25.256Z",
+          "completed": true,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": "2026-08-30T14:32:25.327Z",
+          "completed": true,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ],
+      "returnStatus": "Approved",
+      "returnId": "RET-1788100345533-kafg"
+    },
     {
       "orderId": "OD-LK-46713959",
       "userId": "usr-mtfwq53v-t7fu",
@@ -4634,6 +4734,20 @@
   ],
   "addresses": [
     {
+      "id": "addr-1788100344096-jjar",
+      "userId": "usr-mtfwrzke-1oqh",
+      "isDefault": true,
+      "createdAt": "2026-08-30T14:32:24.096Z",
+      "fullName": "Vikram Sundaram",
+      "phone": "9876543210",
+      "houseNo": "Villa 14, Palm Meadows",
+      "street": "Whitefield Main Road",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560066",
+      "addressType": "Home"
+    },
+    {
       "id": "addr-1788100257966-pawz",
       "userId": "usr-mtfwq53v-t7fu",
       "isDefault": true,
@@ -4968,9 +5082,25 @@
     ],
     "usr-mtfwq53v-t7fu": [
       "lap-mtfi8jbp-ukqt"
+    ],
+    "usr-mtfwrzke-1oqh": [
+      "lap-mtfi8jbp-ukqt"
     ]
   },
   "reviews": [
+    {
+      "id": "rev-1788100345457-11v0",
+      "userId": "usr-mtfwrzke-1oqh",
+      "userName": "Vikram Sundaram",
+      "productId": "lap-mtfi8jbp-ukqt",
+      "rating": 5,
+      "title": "Sensational Laptop!",
+      "comment": "High refresh rate screen, super fast boot, and seamless Cash on Delivery experience.",
+      "reviewImage": null,
+      "isVerifiedPurchase": true,
+      "status": "approved",
+      "createdAt": "2026-08-30T14:32:25.457Z"
+    },
     {
       "id": "rev-1788100259333-ffvf",
       "userId": "usr-mtfwq53v-t7fu",
@@ -5168,6 +5298,44 @@
     }
   ],
   "returns": [
+    {
+      "id": "RET-1788100345533-kafg",
+      "orderId": "OD-LK-88621923",
+      "userId": "usr-mtfwrzke-1oqh",
+      "customer": {
+        "id": "addr-1788100344096-jjar",
+        "userId": "usr-mtfwrzke-1oqh",
+        "isDefault": true,
+        "createdAt": "2026-08-30T14:32:24.096Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788100343928@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtfi8jbp-ukqt",
+          "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+          "price": 269990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Intel Core Ultra 9 185H"
+        }
+      ],
+      "type": "Replacement",
+      "reason": "Minor display tint issue",
+      "description": "Customer requested 7-day doorstep replacement unit.",
+      "images": [],
+      "status": "Approved",
+      "createdAt": "2026-08-30T14:32:25.533Z",
+      "updatedAt": "2026-08-30T14:32:25.606Z",
+      "adminNotes": "Pickup scheduled via Ekart Express"
+    },
     {
       "id": "RET-1788100259406-hw16",
       "orderId": "OD-LK-46713959",
@@ -5776,6 +5944,19 @@
     }
   ],
   "supportTickets": [
+    {
+      "id": "TCK-1788100345663-1vfu",
+      "userId": "usr-mtfwrzke-1oqh",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788100343928@test.com",
+      "orderId": null,
+      "subject": "Warranty registration inquiry",
+      "message": "How do I register the 1-year onsite brand warranty?",
+      "status": "Resolved",
+      "reply": "Your warranty is automatically active with the invoice in My Orders!",
+      "createdAt": "2026-08-30T14:32:25.663Z",
+      "updatedAt": "2026-08-30T14:32:25.729Z"
+    },
     {
       "id": "TCK-1788100259540-1wjx",
       "userId": "usr-mtfwq53v-t7fu",

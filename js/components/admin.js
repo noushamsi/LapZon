@@ -315,9 +315,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                               ` : `
                                 <span style="color: var(--accent-emerald); font-size: 0.78rem; font-weight: 700;">✓ Delivered</span>
                               `}
-                              <a href="#order-tracking?id=${order.orderId}" target="_blank" style="font-size: 0.75rem; color: var(--primary-blue); text-decoration: none;">
-                                View Tracking ↗
-                              </a>
                             </div>
                           </td>
                         </tr>
