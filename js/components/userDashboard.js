@@ -17,7 +17,7 @@ import { openAuthModal } from './authModal.js';
 
 export async function renderUserDashboard(container) {
   const user = auth.getUser();
-  if (!user) {
+  if (!user || user.role === 'admin') {
     container.innerHTML = `
       <div class="container" style="max-width: 600px; margin: 4rem auto; text-align: center; padding: 3rem 1.5rem; background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
         <div style="font-size: 3.5rem; margin-bottom: 1rem;">👤🔒</div>

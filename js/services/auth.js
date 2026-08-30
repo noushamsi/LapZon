@@ -3,8 +3,10 @@
  * Manages JWT tokens, user roles, login state, and role checks.
  */
 
-const TOKEN_KEY = 'lapkart_auth_token_v2';
-const USER_KEY = 'lapkart_auth_user_v2';
+const CUST_TOKEN_KEY = 'lapkart_customer_token_v3';
+const CUST_USER_KEY = 'lapkart_customer_user_v3';
+const ADMIN_TOKEN_KEY = 'lapkart_admin_token_v3';
+const ADMIN_USER_KEY = 'lapkart_admin_user_v3';
 
 const safeStorage = {
   getItem: (k) => {
@@ -28,14 +30,12 @@ const safeStorage = {
 
 class AuthService {
   constructor() {
-    this.token = safeStorage.getItem(TOKEN_KEY) || null;
-    this.user = this.loadStoredUser();
     this.listeners = new Set();
   }
 
-  loadStoredUser() {
+  loadStoredUser(key) {
     try {
-      const raw = safeStorage.getItem(USER_KEY);
+      const raw = safeStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -48,42 +48,83 @@ class AuthService {
   }
 
   notify() {
-    this.listeners.forEach(cb => cb({ user: this.user, token: this.token, role: this.getRole() }));
+    this.listeners.forEach(cb => cb({ 
+      user: this.getUser(), 
+      token: this.getToken(), 
+      role: this.getRole() 
+    }));
+  }
+
+  isInAdminContext() {
+    if (typeof window === 'undefined') return false;
+    const hash = window.location.hash || '';
+    return hash.startsWith('#admin') && hash !== '#admin-login';
   }
 
   getToken() {
-    return this.token;
+    if (this.isInAdminContext()) {
+      return safeStorage.getItem(ADMIN_TOKEN_KEY);
+    }
+    return safeStorage.getItem(CUST_TOKEN_KEY);
   }
 
   getUser() {
-    return this.user;
+    if (this.isInAdminContext()) {
+      return this.loadStoredUser(ADMIN_USER_KEY);
+    }
+    return this.loadStoredUser(CUST_USER_KEY);
+  }
+
+  getCustomerUser() {
+    return this.loadStoredUser(CUST_USER_KEY);
+  }
+
+  getCustomerToken() {
+    return safeStorage.getItem(CUST_TOKEN_KEY);
+  }
+
+  getAdminUser() {
+    return this.loadStoredUser(ADMIN_USER_KEY);
+  }
+
+  getAdminToken() {
+    return safeStorage.getItem(ADMIN_TOKEN_KEY);
   }
 
   getRole() {
-    return this.user ? this.user.role : 'guest';
+    const user = this.getUser();
+    return user ? user.role : 'guest';
   }
 
   isAuthenticated() {
-    return Boolean(this.token && this.user);
+    return Boolean(this.getToken() && this.getUser());
   }
 
   isAdmin() {
-    return Boolean(this.token && this.user && this.user.role === 'admin');
+    const adminUser = this.getAdminUser();
+    const adminToken = this.getAdminToken();
+    return Boolean(adminToken && adminUser && adminUser.role === 'admin');
   }
 
   setSession(token, user) {
-    this.token = token;
-    this.user = user;
-    safeStorage.setItem(TOKEN_KEY, token);
-    safeStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (user && user.role === 'admin') {
+      safeStorage.setItem(ADMIN_TOKEN_KEY, token);
+      safeStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    } else {
+      safeStorage.setItem(CUST_TOKEN_KEY, token);
+      safeStorage.setItem(CUST_USER_KEY, JSON.stringify(user));
+    }
     this.notify();
   }
 
   logout() {
-    this.token = null;
-    this.user = null;
-    safeStorage.removeItem(TOKEN_KEY);
-    safeStorage.removeItem(USER_KEY);
+    if (this.isInAdminContext()) {
+      safeStorage.removeItem(ADMIN_TOKEN_KEY);
+      safeStorage.removeItem(ADMIN_USER_KEY);
+    } else {
+      safeStorage.removeItem(CUST_TOKEN_KEY);
+      safeStorage.removeItem(CUST_USER_KEY);
+    }
     this.notify();
   }
 }

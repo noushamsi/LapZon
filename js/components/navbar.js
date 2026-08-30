@@ -110,7 +110,7 @@ export function renderNavbar() {
               </button>
 
               <!-- Auth Status / Profile -->
-              ${user ? `
+              ${(user && user.role !== 'admin') ? `
                 <div class="nav-user-dropdown-wrap" style="position: relative; display: inline-block;">
                   <button type="button" class="nav-link-btn nav-user-btn" id="nav-user-menu-btn" style="background: rgba(255,255,255,0.15); color: #fff; font-weight: 700; border-radius: 8px;">
                     👤 <span class="action-text">${user.name ? user.name.split(' ')[0] : 'Account'}</span> ▾
