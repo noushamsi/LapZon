@@ -9,7 +9,7 @@ import { state } from '../state.js';
 import { showToast } from '../app.js';
 import { getAppliedCoupon } from './cart.js';
 
-export function renderCheckoutAddress(container) {
+export async function renderCheckoutAddress(container) {
   const cart = state.getCart();
   if (cart.length === 0) {
     window.location.hash = '#store';
@@ -19,8 +19,18 @@ export function renderCheckoutAddress(container) {
 
   const { discount: couponDiscount } = getAppliedCoupon();
   const totals = state.getCartTotals(couponDiscount);
-  const addresses = state.getAddresses();
-  let activeAddress = state.getActiveAddress();
+  
+  let addresses = [];
+  try {
+    const res = await api.getUserAddresses();
+    if (res && res.addresses) {
+      addresses = res.addresses;
+    }
+  } catch {
+    addresses = state.getAddresses();
+  }
+
+  let activeAddress = addresses.length > 0 ? addresses[0] : null;
   let showNewForm = addresses.length === 0;
 
   function formatPrice(val) {

@@ -1,7 +1,8 @@
 /**
  * Owner / Admin Dashboard Component
  * Full product catalog CRUD, image upload/preset selector, confirmation/drafts workflow,
- * stock toggles, customer orders fulfillment manager, and real-time dispatch synchronizer.
+ * stock toggles, customer orders fulfillment manager, returns manager, reviews moderation,
+ * support tickets responder, and real-time dispatch synchronizer.
  */
 
 import { api } from '../services/api.js';
@@ -11,10 +12,13 @@ import { showToast } from '../app.js';
 const ORDER_STAGES = ["Waiting for Admin Confirmation", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
 
 export async function renderAdminDashboard(container, queryParams = {}) {
-  let activeTab = queryParams.tab || 'orders'; // 'orders' | 'inventory' | 'drafts' | 'add-product'
+  let activeTab = queryParams.tab || 'orders'; // 'orders' | 'inventory' | 'drafts' | 'returns' | 'reviews' | 'support' | 'add-product'
   let metrics = { totalRevenue: 0, totalOrders: 0, activeShipments: 0, totalProducts: 0, pendingApprovals: 0, outOfStockCount: 0 };
   let products = [];
   let orders = [];
+  let returns = [];
+  let reviews = [];
+  let tickets = [];
   let isLoading = true;
 
   let uploadedImagesList = [
@@ -38,14 +42,21 @@ export async function renderAdminDashboard(container, queryParams = {}) {
   async function loadAdminData() {
     try {
       isLoading = true;
-      const [mRes, pRes, oRes] = await Promise.all([
+      const [mRes, pRes, oRes, retRes, revRes, ticRes] = await Promise.allSettled([
         api.getAdminMetrics(),
         api.getAdminProducts(),
-        api.getAdminOrders()
+        api.getAdminOrders(),
+        api.getAdminReturns(),
+        api.getAdminReviews(),
+        api.getAdminTickets()
       ]);
-      metrics = mRes.metrics || { totalRevenue: 0, totalOrders: 0, activeShipments: 0, totalProducts: 0, pendingApprovals: 0, outOfStockCount: 0 };
-      products = pRes.products || [];
-      orders = oRes.orders || [];
+
+      if (mRes.status === 'fulfilled') metrics = mRes.value?.metrics || metrics;
+      if (pRes.status === 'fulfilled') products = pRes.value?.products || [];
+      if (oRes.status === 'fulfilled') orders = oRes.value?.orders || [];
+      if (retRes.status === 'fulfilled') returns = retRes.value?.returns || [];
+      if (revRes.status === 'fulfilled') reviews = revRes.value?.reviews || [];
+      if (ticRes.status === 'fulfilled') tickets = ticRes.value?.tickets || [];
     } catch (err) {
       console.error('Failed to load admin data:', err);
       showToast(err.message || 'Failed to connect to Admin API.', 'error');
@@ -167,14 +178,14 @@ export async function renderAdminDashboard(container, queryParams = {}) {
           </div>
 
           <!-- Navigation Tabs -->
-          <div class="admin-nav-tabs">
+          <div class="admin-nav-tabs" style="display: flex; flex-wrap: wrap; gap: 6px;">
             <button type="button" class="admin-tab-btn ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders">
-              📦 Customer Orders Fulfillment
+              📦 Orders Fulfillment
               <span class="tab-count-badge">${orders.length}</span>
             </button>
 
             <button type="button" class="admin-tab-btn ${activeTab === 'inventory' ? 'active' : ''}" data-tab="inventory">
-              📋 Live Laptop Inventory & Stock Toggle
+              📋 Live Inventory & Stock
               <span class="tab-count-badge">${liveProducts.length}</span>
             </button>
 
@@ -183,14 +194,24 @@ export async function renderAdminDashboard(container, queryParams = {}) {
               <span class="tab-count-badge" style="background-color: ${draftProducts.length > 0 ? '#ff9f00' : 'rgba(255,255,255,0.2)'}; color: ${draftProducts.length > 0 ? '#fff' : 'inherit'}; font-weight: 800;">${draftProducts.length}</span>
             </button>
 
+            <button type="button" class="admin-tab-btn ${activeTab === 'returns' ? 'active' : ''}" data-tab="returns">
+              🔄 Returns (${returns.length})
+            </button>
+
+            <button type="button" class="admin-tab-btn ${activeTab === 'reviews' ? 'active' : ''}" data-tab="reviews">
+              ⭐ Reviews (${reviews.length})
+            </button>
+
+            <button type="button" class="admin-tab-btn ${activeTab === 'support' ? 'active' : ''}" data-tab="support">
+              💬 Support Tickets (${tickets.length})
+            </button>
+
             <button type="button" class="admin-tab-btn ${activeTab === 'add-product' ? 'active' : ''}" data-tab="add-product">
-              ➕ Add New Laptop Product
+              ➕ Add New Laptop
             </button>
           </div>
 
-          <!-- ==============================================================
-               TAB 1: CUSTOMER ORDERS FULFILLMENT & DISPATCH
-               ============================================================== -->
+          <!-- TAB 1: CUSTOMER ORDERS FULFILLMENT -->
           <div class="admin-panel ${activeTab === 'orders' ? 'active' : ''}" id="panel-orders">
             <div class="panel-header-action">
               <h3>Customer Orders (${orders.length})</h3>
@@ -222,13 +243,11 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
                       return `
                         <tr data-order-id="${order.orderId}">
-                          <!-- 1. Order ID -->
                           <td>
                             <div class="tbl-order-id">${order.orderId}</div>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(order.createdAt)}</div>
                           </td>
 
-                          <!-- 2. Customer -->
                           <td>
                             <div class="tbl-customer-info">
                               <h5>${order.customer.fullName}</h5>
@@ -236,14 +255,12 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             </div>
                           </td>
 
-                          <!-- 3. Address -->
                           <td>
                             <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 200px;">
                               ${order.customer.houseNo}, ${order.customer.street}, ${order.customer.city}, ${order.customer.state} - <strong>${order.customer.pinCode}</strong>
                             </div>
                           </td>
 
-                          <!-- 4. Items -->
                           <td>
                             <div style="display: flex; flex-direction: column; gap: 4px; max-width: 220px;">
                               ${order.items.map(it => `
@@ -254,7 +271,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             </div>
                           </td>
 
-                          <!-- 5. Total & Payment -->
                           <td>
                             <div style="font-weight: 800; font-size: 0.95rem; color: var(--primary-blue);">
                               ${formatPrice(order.pricing.totalAmount)}
@@ -264,7 +280,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             </div>
                           </td>
 
-                          <!-- 6. Status Selector / Action -->
                           <td>
                             ${order.status === 'Waiting for Admin Confirmation' ? `
                               <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -291,7 +306,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             `)}
                           </td>
 
-                          <!-- 7. Delivery Details & Quick Delivered Action -->
                           <td>
                             <div style="display: flex; flex-direction: column; gap: 6px;">
                               <button type="button" class="btn btn-sm btn-outline btn-edit-delivery" data-id="${order.orderId}">
@@ -304,7 +318,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                               ` : `
                                 <span style="color: var(--accent-emerald); font-size: 0.78rem; font-weight: 700;">✓ Delivered</span>
                               `}
-                              <a href="#order-tracking/${order.orderId}" target="_blank" style="font-size: 0.75rem; color: var(--primary-blue); text-decoration: none;">
+                              <a href="#order-tracking?id=${order.orderId}" target="_blank" style="font-size: 0.75rem; color: var(--primary-blue); text-decoration: none;">
                                 View Tracking ↗
                               </a>
                             </div>
@@ -318,9 +332,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
             `}
           </div>
 
-          <!-- ==============================================================
-               TAB 2: LIVE PRODUCT INVENTORY & STOCK TOGGLE
-               ============================================================== -->
+          <!-- TAB 2: LIVE PRODUCT INVENTORY -->
           <div class="admin-panel ${activeTab === 'inventory' ? 'active' : ''}" id="panel-inventory">
             <div class="panel-header-action">
               <h3>Live Laptop Products in Store (${liveProducts.length})</h3>
@@ -345,7 +357,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                 <tbody>
                   ${liveProducts.map(prod => `
                     <tr data-product-id="${prod.id}">
-                      <!-- 1. Product Cell -->
                       <td>
                         <div class="tbl-product-cell">
                           <img src="${prod.image}" alt="${prod.name}" class="tbl-product-img" />
@@ -356,12 +367,10 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </div>
                       </td>
 
-                      <!-- 2. Category -->
                       <td>
                         <span class="badge badge-tag">${prod.category || 'Ultrabook'}</span>
                       </td>
 
-                      <!-- 3. Specs -->
                       <td>
                         <div style="font-size: 0.8rem; color: var(--text-secondary); max-width: 250px;">
                           <strong>${prod.processor}</strong><br/>
@@ -369,14 +378,12 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </div>
                       </td>
 
-                      <!-- 4. Price -->
                       <td>
                         <div style="font-weight: 700; color: var(--text-main);">${formatPrice(prod.price)}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); text-decoration: line-through;">${formatPrice(prod.mrp)}</div>
                         <div style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: 700;">${prod.discount}% off</div>
                       </td>
 
-                      <!-- 5. Stock Qty -->
                       <td>
                         <input 
                           type="number" 
@@ -389,7 +396,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         />
                       </td>
 
-                      <!-- 6. Live Stock Status Toggle Button -->
                       <td>
                         <button 
                           type="button" 
@@ -403,7 +409,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </button>
                       </td>
 
-                      <!-- 7. Actions -->
                       <td>
                         <button type="button" class="btn btn-sm btn-outline btn-delete-product" data-id="${prod.id}" style="color: var(--accent-red); border-color: rgba(211,47,47,0.3);">
                           🗑️ Delete
@@ -416,9 +421,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
             </div>
           </div>
 
-          <!-- ==============================================================
-               TAB 3: PENDING CONFIRMATION QUEUE (DRAFTS)
-               ============================================================== -->
+          <!-- TAB 3: DRAFTS / PENDING QUEUE -->
           <div class="admin-panel ${activeTab === 'drafts' ? 'active' : ''}" id="panel-drafts">
             <div class="panel-header-action">
               <h3>Submitted Products Awaiting Admin Approval (${draftProducts.length})</h3>
@@ -464,9 +467,156 @@ export async function renderAdminDashboard(container, queryParams = {}) {
             `}
           </div>
 
-          <!-- ==============================================================
-               TAB 4: ADD NEW LAPTOP PRODUCT FORM (WITH 10-IMAGE UPLOAD/URL)
-               ============================================================== -->
+          <!-- TAB 4: RETURNS MANAGEMENT -->
+          <div class="admin-panel ${activeTab === 'returns' ? 'active' : ''}" id="panel-returns">
+            <div class="panel-header-action">
+              <h3>Returns & Replacement Requests (${returns.length})</h3>
+            </div>
+
+            ${returns.length === 0 ? `
+              <div style="background: #fff; border-radius: 12px; padding: 3rem; text-align: center; border: 1px solid #e2e8f0;">
+                <p>No customer return or replacement requests.</p>
+              </div>
+            ` : `
+              <div class="admin-table-card">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Return ID</th>
+                      <th>Order ID</th>
+                      <th>Customer Email</th>
+                      <th>Reason & Details</th>
+                      <th>Status</th>
+                      <th>Admin Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${returns.map(r => `
+                      <tr>
+                        <td><strong>#${r.id}</strong></td>
+                        <td>#${r.orderId}</td>
+                        <td>${r.userEmail || '-'}</td>
+                        <td>
+                          <strong>${r.reason}</strong><br/>
+                          <span style="font-size: 0.8rem; color: #64748b;">${r.description}</span>
+                        </td>
+                        <td>
+                          <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 800;">${r.status}</span>
+                        </td>
+                        <td>
+                          <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-sm btn-green btn-return-approve" data-id="${r.id}">
+                              ✓ Approve
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline btn-return-complete" data-id="${r.id}" style="color: #2563eb;">
+                              ✓ Completed
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
+          <!-- TAB 5: REVIEWS MODERATION -->
+          <div class="admin-panel ${activeTab === 'reviews' ? 'active' : ''}" id="panel-reviews">
+            <div class="panel-header-action">
+              <h3>Customer Reviews Moderation (${reviews.length})</h3>
+            </div>
+
+            ${reviews.length === 0 ? `
+              <div style="background: #fff; border-radius: 12px; padding: 3rem; text-align: center; border: 1px solid #e2e8f0;">
+                <p>No customer reviews submitted yet.</p>
+              </div>
+            ` : `
+              <div class="admin-table-card">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Customer</th>
+                      <th>Rating & Review</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${reviews.map(rev => `
+                      <tr>
+                        <td>${rev.productId}</td>
+                        <td>${rev.userName || 'Customer'} (${rev.userEmail || ''})</td>
+                        <td>
+                          <span class="badge badge-rating">${rev.rating} ★</span> <strong>${rev.title || ''}</strong><br/>
+                          <span style="font-size: 0.85rem; color: #334155;">${rev.comment}</span>
+                        </td>
+                        <td>
+                          <span class="badge" style="background: ${rev.status === 'approved' ? '#dcfce7' : '#fef3c7'}; color: ${rev.status === 'approved' ? '#16a34a' : '#b45309'};">
+                            ${rev.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div style="display: flex; gap: 6px;">
+                            ${rev.status !== 'approved' ? `
+                              <button type="button" class="btn btn-sm btn-green btn-review-approve" data-id="${rev.id}">
+                                ✓ Approve
+                              </button>
+                            ` : ''}
+                            <button type="button" class="btn btn-sm btn-outline btn-review-delete" data-id="${rev.id}" style="color: #dc2626;">
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
+          <!-- TAB 6: SUPPORT TICKETS -->
+          <div class="admin-panel ${activeTab === 'support' ? 'active' : ''}" id="panel-support">
+            <div class="panel-header-action">
+              <h3>Customer Support Tickets (${tickets.length})</h3>
+            </div>
+
+            ${tickets.length === 0 ? `
+              <div style="background: #fff; border-radius: 12px; padding: 3rem; text-align: center; border: 1px solid #e2e8f0;">
+                <p>No pending customer support inquiries.</p>
+              </div>
+            ` : `
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                ${tickets.map(t => `
+                  <div style="background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                      <div>
+                        <strong style="font-size: 1rem; color: #0f172a;">${t.subject}</strong> • <span style="font-size: 0.85rem; color: #64748b;">${t.name} (${t.email} - ${t.phone || ''})</span>
+                      </div>
+                      <span class="badge" style="background: ${t.status === 'Resolved' ? '#dcfce7' : '#fef3c7'}; color: ${t.status === 'Resolved' ? '#16a34a' : '#b45309'}; font-weight: 800;">
+                        ${t.status}
+                      </span>
+                    </div>
+                    <p style="font-size: 0.9rem; color: #334155; margin: 0 0 0.75rem;">${t.message}</p>
+                    ${t.reply ? `
+                      <div style="background: #eff6ff; border-left: 3px solid #2874f0; padding: 0.6rem 0.85rem; font-size: 0.85rem; color: #1e40af; margin-bottom: 0.75rem;">
+                        <strong>Reply Sent:</strong> ${t.reply}
+                      </div>
+                    ` : ''}
+                    <div style="display: flex; gap: 8px;">
+                      <button type="button" class="btn btn-sm btn-primary btn-reply-ticket" data-id="${t.id}">
+                        ✉️ Reply to Customer
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- TAB 7: ADD NEW LAPTOP FORM -->
           <div class="admin-panel ${activeTab === 'add-product' ? 'active' : ''}" id="panel-add-product">
             <div class="checkout-card" style="max-width: 960px; margin: 0 auto;">
               <div class="checkout-card-header">
@@ -475,13 +625,11 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
               <div class="checkout-card-body">
                 <form id="form-add-laptop" class="address-form-grid" novalidate>
-                  <!-- 1. Laptop Name -->
                   <div class="form-group full-width">
                     <label for="new-lap-name">Laptop Name & Model Title <span class="req">*</span></label>
                     <input type="text" id="new-lap-name" placeholder="e.g. Acer Swift Go 14 AI OLED Laptop" required />
                   </div>
 
-                  <!-- 2. Brand -->
                   <div class="form-group">
                     <label for="new-lap-brand">Brand <span class="req">*</span></label>
                     <select id="new-lap-brand" required>
@@ -497,7 +645,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                     </select>
                   </div>
 
-                  <!-- 3. Category -->
                   <div class="form-group">
                     <label for="new-lap-category">Category <span class="req">*</span></label>
                     <select id="new-lap-category" required>
@@ -508,14 +655,10 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                     </select>
                   </div>
 
-                  <!-- ==========================================================
-                       4. MULTI-IMAGE UPLOAD & 10-ANGLE GALLERY MANAGER
-                       ========================================================== -->
                   <div class="form-group full-width">
                     <label>Laptop Photos & 10-Angle Gallery (Upload Files or Add URLs) <span class="req">*</span></label>
                     
                     <div class="multi-image-manager-box">
-                      <!-- File Upload Dropzone -->
                       <input type="file" id="lap-file-uploader" multiple accept="image/*" style="display: none;" />
                       <div class="image-upload-dropzone" id="lap-dropzone">
                         <div class="dropzone-icon">📸 ⬆️</div>
@@ -523,7 +666,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         <div class="dropzone-desc">Upload up to 10 angle photos (Front, Back, Left Side, Right Side, Keyboard, Display, Bottom, Box) • PNG, JPG, WEBP</div>
                       </div>
 
-                      <!-- Direct Image URL Input Bar -->
                       <div class="image-url-input-bar">
                         <input type="url" id="custom-img-url-input" placeholder="Or paste custom image web URL (https://...)" />
                         <button type="button" class="btn btn-primary" id="btn-add-img-url">
@@ -534,11 +676,10 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </button>
                       </div>
 
-                      <!-- Quick Presets Carousel -->
                       <div style="margin-bottom: 1rem;">
                         <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quick Add Preset Angles:</span>
                         <div class="preset-imgs-grid">
-                          ${LAPTOP_PRESET_IMAGES.map((preset, idx) => `
+                          ${LAPTOP_PRESET_IMAGES.map((preset) => `
                             <div class="preset-img-opt" data-url="${preset.url}" data-angle="${preset.angle}" title="Click to add ${preset.angle}">
                               <img src="${preset.url}" alt="${preset.label}" />
                               <span>${preset.label}</span>
@@ -547,7 +688,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </div>
                       </div>
 
-                      <!-- Interactive Live Gallery Slots -->
                       <div class="gallery-counter-header">
                         <span>📸 Product Gallery Photos (${uploadedImagesList.length} of 10 Angles Loaded)</span>
                         ${uploadedImagesList.length > 0 ? `
@@ -563,61 +703,51 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                     </div>
                   </div>
 
-                  <!-- 5. Processor -->
                   <div class="form-group">
                     <label for="new-lap-proc">Processor <span class="req">*</span></label>
                     <input type="text" id="new-lap-proc" placeholder="e.g. Intel Core Ultra 7 155H" required />
                   </div>
 
-                  <!-- 6. RAM -->
                   <div class="form-group">
                     <label for="new-lap-ram">RAM Memory <span class="req">*</span></label>
                     <input type="text" id="new-lap-ram" placeholder="e.g. 16GB LPDDR5X" required />
                   </div>
 
-                  <!-- 7. Storage -->
                   <div class="form-group">
                     <label for="new-lap-storage">Storage (SSD) <span class="req">*</span></label>
                     <input type="text" id="new-lap-storage" placeholder="e.g. 1TB NVMe PCIe Gen4 SSD" required />
                   </div>
 
-                  <!-- 8. Graphics -->
                   <div class="form-group">
                     <label for="new-lap-graphics">Graphics Card <span class="req">*</span></label>
                     <input type="text" id="new-lap-graphics" placeholder="e.g. NVIDIA GeForce RTX 4060 8GB" required />
                   </div>
 
-                  <!-- 9. Display -->
                   <div class="form-group">
                     <label for="new-lap-display">Display <span class="req">*</span></label>
                     <input type="text" id="new-lap-display" placeholder="e.g. 14-inch 2.8K 120Hz OLED (2880x1800)" required />
                   </div>
 
-                  <!-- 10. Operating System -->
                   <div class="form-group">
                     <label for="new-lap-os">Operating System</label>
                     <input type="text" id="new-lap-os" placeholder="e.g. Windows 11 Home" value="Windows 11 Home" />
                   </div>
 
-                  <!-- 11. MRP (₹) -->
                   <div class="form-group">
                     <label for="new-lap-mrp">Original MRP (₹) <span class="req">*</span></label>
                     <input type="number" id="new-lap-mrp" placeholder="e.g. 99990" required />
                   </div>
 
-                  <!-- 12. Selling Price (₹) -->
                   <div class="form-group">
                     <label for="new-lap-price">Selling Price (₹) <span class="req">*</span></label>
                     <input type="number" id="new-lap-price" placeholder="e.g. 79990" required />
                   </div>
 
-                  <!-- 13. Stock Quantity -->
                   <div class="form-group">
                     <label for="new-lap-stock">Stock Quantity (Units) <span class="req">*</span></label>
                     <input type="number" id="new-lap-stock" value="15" min="0" required />
                   </div>
 
-                  <!-- 14. Stock Status Toggle -->
                   <div class="form-group">
                     <label>Initial Stock Availability</label>
                     <div class="radio-pills-group" style="margin-top: 0.5rem;">
@@ -632,7 +762,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                     </div>
                   </div>
 
-                  <!-- Submit Action Buttons -->
                   <div class="form-group full-width" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                     <button type="submit" class="btn btn-green btn-lg" id="btn-submit-publish" style="flex: 1;">
                       🚀 Publish Directly to Store
@@ -656,7 +785,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
   }
 
   function attachAdminEvents() {
-    // 1. Tab Navigation
+    // Tab switching
     container.querySelectorAll('.admin-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         activeTab = btn.dataset.tab;
@@ -672,9 +801,83 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     }
 
-    // ========================================================================
-    // MULTI-IMAGE UPLOAD & GALLERY HANDLERS
-    // ========================================================================
+    // Returns moderation
+    container.querySelectorAll('.btn-return-approve').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const notes = prompt('Enter return approval notes (e.g. Pickup scheduled):', 'Pickup scheduled via Ekart Express');
+        if (notes !== null) {
+          try {
+            await api.updateAdminReturnStatus(id, 'Approved', notes);
+            showToast('Return request approved!', 'success');
+            loadAdminData();
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    });
+
+    container.querySelectorAll('.btn-return-complete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        try {
+          await api.updateAdminReturnStatus(id, 'Completed', 'Replacement unit dispatched to customer.');
+          showToast('Return request marked Completed!', 'success');
+          loadAdminData();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    });
+
+    // Reviews moderation
+    container.querySelectorAll('.btn-review-approve').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        try {
+          await api.approveAdminReview(id);
+          showToast('Review approved & published!', 'success');
+          loadAdminData();
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    });
+
+    container.querySelectorAll('.btn-review-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (confirm('Delete this customer review?')) {
+          try {
+            await api.deleteAdminReview(id);
+            showToast('Review deleted.', 'info');
+            loadAdminData();
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    });
+
+    // Support ticket reply
+    container.querySelectorAll('.btn-reply-ticket').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const reply = prompt('Enter resolution/response to customer:');
+        if (reply) {
+          try {
+            await api.replyAdminTicket(id, reply, 'Resolved');
+            showToast('Reply saved and customer ticket resolved!', 'success');
+            loadAdminData();
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    });
+
+    // Multi-image upload handlers
     const fileUploader = container.querySelector('#lap-file-uploader');
     const dropzone = container.querySelector('#lap-dropzone');
     const addUrlBtn = container.querySelector('#btn-add-img-url');
@@ -832,7 +1035,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
     attachGallerySlotEvents();
 
-    // 3. Reset Demo Data
+    // Reset Demo Data
     const resetDemoBtn = container.querySelector('#btn-reset-demo');
     if (resetDemoBtn) {
       resetDemoBtn.addEventListener('click', async () => {
@@ -848,7 +1051,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     }
 
-    // 4. Live Stock Status Toggle Button
+    // Live Stock Toggle
     container.querySelectorAll('.btn-toggle-stock').forEach(btn => {
       btn.addEventListener('click', async () => {
         const prodId = btn.dataset.id;
@@ -865,7 +1068,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 5. Stock count modifier
+    // Stock count modifier
     container.querySelectorAll('.input-stock-count').forEach(input => {
       input.addEventListener('change', async (e) => {
         const prodId = input.dataset.id;
@@ -881,7 +1084,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 6. Delete Product
+    // Delete Product
     container.querySelectorAll('.btn-delete-product').forEach(btn => {
       btn.addEventListener('click', async () => {
         const prodId = btn.dataset.id;
@@ -897,7 +1100,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 7a. Admin Confirm Order
+    // Admin Confirm Order
     container.querySelectorAll('.btn-admin-confirm').forEach(btn => {
       btn.addEventListener('click', async () => {
         const orderId = btn.dataset.id;
@@ -911,7 +1114,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 7b. Admin Reject / Cancel Order
+    // Admin Reject / Cancel Order
     container.querySelectorAll('.btn-admin-reject').forEach(btn => {
       btn.addEventListener('click', async () => {
         const orderId = btn.dataset.id;
@@ -927,7 +1130,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 7c. Order Status Dropdown Change
+    // Order Status Dropdown Change
     container.querySelectorAll('.order-status-select').forEach(sel => {
       sel.addEventListener('change', async (e) => {
         const orderId = sel.dataset.id;
@@ -943,7 +1146,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 8. Quick Mark as Delivered Button
+    // Quick Mark as Delivered Button
     container.querySelectorAll('.btn-quick-deliver').forEach(btn => {
       btn.addEventListener('click', async () => {
         const orderId = btn.dataset.id;
@@ -958,7 +1161,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 9. Edit Courier Delivery Details
+    // Edit Courier Delivery Details
     container.querySelectorAll('.btn-edit-delivery').forEach(btn => {
       btn.addEventListener('click', () => {
         const orderId = btn.dataset.id;
@@ -966,7 +1169,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 10. Accept / Approve Draft Products into User Store
+    // Accept / Approve Draft Products into User Store
     container.querySelectorAll('.btn-confirm-draft').forEach(btn => {
       btn.addEventListener('click', async () => {
         const draftId = btn.dataset.id;
@@ -996,9 +1199,8 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
-    // 11. Add Laptop Form Handler
+    // Add Laptop Form Handler
     const addForm = container.querySelector('#form-add-laptop');
-    const submitPublishBtn = container.querySelector('#btn-submit-publish');
     const submitDraftBtn = container.querySelector('#btn-submit-draft');
 
     if (addForm) {
@@ -1042,7 +1244,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
             price,
             stock,
             inStock,
-            status: statusMode // 'approved' or 'pending'
+            status: statusMode
           });
 
           showToast(res.message, 'success');
@@ -1128,7 +1330,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
         const expectedDate = modal.querySelector('#edit-expected-date').value;
 
         try {
-          const res = await api.updateOrderDeliveryDetails(order.orderId, {
+          await api.updateOrderDeliveryDetails(order.orderId, {
             courierPartner,
             trackingNumber,
             currentLocation,

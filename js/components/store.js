@@ -522,7 +522,8 @@ export async function renderStorePage(container, queryParams = {}) {
         window.location.hash = '#checkout-address';
       } else if (action === 'wishlist') {
         const added = state.toggleWishlist(productId);
-        showToast(added ? `Added "${product.name}" to Wishlist!` : `Removed from Wishlist.`, 'success');
+        api.toggleWishlist(productId).catch(() => {});
+        showToast(added ? `Added "${product.name}" to Wishlist! ❤️` : `Removed from Wishlist.`, 'success');
         renderLayout();
       } else if (action === 'quickview' || action === 'view-product') {
         window.location.hash = `#product/${productId}`;

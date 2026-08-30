@@ -237,6 +237,145 @@ app.post('/api/coupons/apply', (req, res) => {
   return res.json({ success: true });
 });
 
+// Password Reset
+app.post('/api/auth/reset-password', (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) {
+    return res.status(400).json({ success: false, error: 'Email and new password are required.' });
+  }
+  const success = db.resetPassword(email, newPassword);
+  if (!success) {
+    return res.status(404).json({ success: false, error: 'Account with this email was not found.' });
+  }
+  return res.json({ success: true, message: 'Password reset successfully! You can now log in.' });
+});
+
+// User Profile Update
+app.put('/api/user/profile', verifyToken, (req, res) => {
+  const { name, phone, password } = req.body;
+  const updatedUser = db.updateUserProfile(req.user.id, { name, phone, password });
+  if (!updatedUser) {
+    return res.status(404).json({ success: false, error: 'User not found.' });
+  }
+  return res.json({ success: true, message: 'Profile updated successfully.', user: updatedUser });
+});
+
+// User Saved Addresses
+app.get('/api/user/addresses', verifyToken, (req, res) => {
+  const addresses = db.getUserAddresses(req.user.id);
+  return res.json({ success: true, addresses });
+});
+
+app.post('/api/user/addresses', verifyToken, (req, res) => {
+  const { fullName, phone, houseNo, street, city, state, pinCode, addressType } = req.body;
+  if (!fullName || !phone || !houseNo || !street || !city || !state || !pinCode) {
+    return res.status(400).json({ success: false, error: 'All address fields are required.' });
+  }
+  const newAddr = db.addUserAddress(req.user.id, { fullName, phone, houseNo, street, city, state, pinCode, addressType: addressType || 'Home' });
+  return res.status(201).json({ success: true, message: 'Address saved.', address: newAddr });
+});
+
+app.delete('/api/user/addresses/:id', verifyToken, (req, res) => {
+  const success = db.deleteUserAddress(req.user.id, req.params.id);
+  return res.json({ success, message: success ? 'Address removed.' : 'Address not found.' });
+});
+
+// Wishlist
+app.get('/api/wishlist', verifyToken, (req, res) => {
+  const data = db.getUserWishlist(req.user.id);
+  return res.json({ success: true, itemIds: data.itemIds, products: data.products });
+});
+
+app.post('/api/wishlist/toggle', verifyToken, (req, res) => {
+  const { productId } = req.body;
+  if (!productId) {
+    return res.status(400).json({ success: false, error: 'Product ID is required.' });
+  }
+  const result = db.toggleWishlist(req.user.id, productId);
+  return res.json({ success: true, added: result.added, itemIds: result.itemIds });
+});
+
+// Product Reviews (Public & Verified Buyer Submission)
+app.get('/api/products/:id/reviews', (req, res) => {
+  const reviews = db.getProductReviews(req.params.id);
+  return res.json({ success: true, reviews });
+});
+
+app.post('/api/reviews', optionalAuth, (req, res) => {
+  const { productId, rating, title, comment, reviewImage, reviewerName } = req.body;
+  if (!productId || !rating || !comment) {
+    return res.status(400).json({ success: false, error: 'Product, star rating, and review comments are required.' });
+  }
+  const userId = req.user ? req.user.id : null;
+  const userName = req.user ? req.user.name : (reviewerName || 'Customer');
+  const review = db.addReview({
+    userId,
+    userName,
+    productId,
+    rating: Number(rating),
+    title,
+    comment,
+    reviewImage
+  });
+  return res.status(201).json({
+    success: true,
+    message: review.isVerifiedPurchase ? 'Verified Buyer review submitted successfully! ⭐' : 'Review submitted successfully!',
+    review
+  });
+});
+
+// Returns & Replacements
+app.post('/api/orders/:orderId/return', optionalAuth, (req, res) => {
+  const { reason, description, images, type } = req.body;
+  if (!reason || !description) {
+    return res.status(400).json({ success: false, error: 'Return reason and description are required.' });
+  }
+  const userId = req.user ? req.user.id : null;
+  const result = db.createReturnRequest({
+    orderId: req.params.orderId,
+    userId,
+    reason,
+    description,
+    images,
+    type
+  });
+  if (!result.success) {
+    return res.status(400).json({ success: false, error: result.error });
+  }
+  return res.status(201).json({
+    success: true,
+    message: 'Return/Replacement request submitted. Our support team will review within 24 hours.',
+    returnRequest: result.returnRequest
+  });
+});
+
+app.get('/api/user/returns', verifyToken, (req, res) => {
+  const returns = db.getUserReturns(req.user.id);
+  return res.json({ success: true, returns });
+});
+
+// Support Tickets
+app.post('/api/support/ticket', optionalAuth, (req, res) => {
+  const { name, email, orderId, subject, message } = req.body;
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ success: false, error: 'Name, email, subject, and message are required.' });
+  }
+  const userId = req.user ? req.user.id : null;
+  const ticket = db.createSupportTicket({ userId, name, email, orderId, subject, message });
+  return res.status(201).json({
+    success: true,
+    message: `Support ticket #${ticket.id} created! Our assistance team will respond shortly.`,
+    ticket
+  });
+});
+
+app.get('/api/support/my-tickets', optionalAuth, (req, res) => {
+  const userId = req.user ? req.user.id : null;
+  const email = req.query.email || (req.user ? req.user.email : null);
+  const tickets = db.getUserTickets(userId, email);
+  return res.json({ success: true, tickets });
+});
+
 // ==========================================================================
 // 4. PROTECTED ADMIN ENDPOINTS (STRICTLY REQUIRE ADMIN ROLE)
 // ==========================================================================
@@ -457,6 +596,62 @@ app.put('/api/admin/orders/:orderId/delivery-details', requireAdmin, (req, res) 
     message: 'Courier tracking details updated.',
     order: updatedOrder
   });
+});
+
+// Admin: Get all customer returns
+app.get('/api/admin/returns', requireAdmin, (req, res) => {
+  const returns = db.getAllReturns();
+  return res.json({ success: true, count: returns.length, returns });
+});
+
+// Admin: Update return request status
+app.put('/api/admin/returns/:id/status', requireAdmin, (req, res) => {
+  const { status, adminNotes } = req.body;
+  if (!status) {
+    return res.status(400).json({ success: false, error: 'Status is required.' });
+  }
+  const updated = db.updateReturnStatus(req.params.id, status, adminNotes);
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Return request not found.' });
+  }
+  return res.json({ success: true, message: `Return #${updated.id} status updated to "${status}".`, returnRequest: updated });
+});
+
+// Admin: Get all reviews for moderation
+app.get('/api/admin/reviews', requireAdmin, (req, res) => {
+  const reviews = db.getAllReviews();
+  return res.json({ success: true, count: reviews.length, reviews });
+});
+
+// Admin: Approve review
+app.put('/api/admin/reviews/:id/approve', requireAdmin, (req, res) => {
+  const success = db.approveReview(req.params.id);
+  return res.json({ success, message: success ? 'Review approved for public display.' : 'Review not found.' });
+});
+
+// Admin: Delete review
+app.delete('/api/admin/reviews/:id', requireAdmin, (req, res) => {
+  const success = db.deleteReview(req.params.id);
+  return res.json({ success, message: success ? 'Review deleted from platform.' : 'Review not found.' });
+});
+
+// Admin: Get all support tickets
+app.get('/api/admin/support/tickets', requireAdmin, (req, res) => {
+  const tickets = db.getAllTickets();
+  return res.json({ success: true, count: tickets.length, tickets });
+});
+
+// Admin: Reply & resolve support ticket
+app.put('/api/admin/support/tickets/:id/reply', requireAdmin, (req, res) => {
+  const { reply, status } = req.body;
+  if (!reply) {
+    return res.status(400).json({ success: false, error: 'Reply message is required.' });
+  }
+  const updated = db.replyTicket(req.params.id, reply, status || 'Resolved');
+  if (!updated) {
+    return res.status(404).json({ success: false, error: 'Ticket not found.' });
+  }
+  return res.json({ success: true, message: `Ticket #${updated.id} replied and marked "${updated.status}".`, ticket: updated });
 });
 
 // Admin: Reset database to seed demo

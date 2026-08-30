@@ -1,5 +1,5 @@
 /**
- * Client-side Hash Router with RBAC Route Guard & Dedicated Product Details Page
+ * Client-side Hash Router with RBAC Route Guard & Dedicated Pages
  */
 
 import { auth } from './services/auth.js';
@@ -9,6 +9,10 @@ import { renderProductDetails } from './components/productDetails.js';
 import { renderCheckoutAddress, renderCheckoutPayment, renderOrderConfirmed } from './components/checkout.js';
 import { renderOrderTracking } from './components/tracking.js';
 import { renderMyOrders } from './components/myOrders.js';
+import { renderUserDashboard } from './components/userDashboard.js';
+import { renderWishlist } from './components/wishlist.js';
+import { renderSupportPage } from './components/support.js';
+import { renderLegalPage } from './components/legal.js';
 import { renderAdminDashboard } from './components/admin.js';
 import { renderAdminLogin } from './components/adminLogin.js';
 import { renderAccessDenied } from './components/accessDenied.js';
@@ -70,11 +74,20 @@ class Router {
     } else if (pathPart.startsWith('order-confirmed/')) {
       const orderId = pathPart.replace('order-confirmed/', '');
       renderOrderConfirmed(this.mainContainer, orderId);
-    } else if (pathPart.startsWith('order-tracking/')) {
-      const orderId = pathPart.replace('order-tracking/', '');
+    } else if (pathPart.startsWith('order-tracking/') || pathPart === 'order-tracking') {
+      const orderId = pathPart.startsWith('order-tracking/') ? pathPart.replace('order-tracking/', '') : paramsObj.id;
       renderOrderTracking(this.mainContainer, orderId);
     } else if (pathPart === 'my-orders') {
       renderMyOrders(this.mainContainer);
+    } else if (pathPart === 'user-dashboard') {
+      renderUserDashboard(this.mainContainer);
+    } else if (pathPart === 'wishlist') {
+      renderWishlist(this.mainContainer);
+    } else if (pathPart === 'support') {
+      renderSupportPage(this.mainContainer);
+    } else if (pathPart.startsWith('legal/')) {
+      const pageKey = pathPart.replace('legal/', '');
+      renderLegalPage(this.mainContainer, pageKey);
     } else if (pathPart === 'admin-login' || pathPart === 'owner-login') {
       renderAdminLogin(this.mainContainer);
     } else if (pathPart === 'admin') {

@@ -12,15 +12,25 @@ import { showToast } from '../app.js';
 
 export async function renderProductDetails(container, productId) {
   let product = null;
+  let dynamicReviews = [];
 
   function formatPrice(val) {
     return '₹' + Number(val).toLocaleString('en-IN');
   }
 
   try {
-    const res = await api.getProductById(productId);
-    product = res.product;
+    const [prodRes, revRes] = await Promise.allSettled([
+      api.getProductById(productId),
+      api.getProductReviews(productId)
+    ]);
+
+    if (prodRes.status === 'fulfilled') product = prodRes.value?.product;
+    if (revRes.status === 'fulfilled') dynamicReviews = revRes.value?.reviews || [];
   } catch {
+    product = state.getProductById(productId);
+  }
+
+  if (!product) {
     product = state.getProductById(productId);
   }
 
@@ -275,7 +285,13 @@ export async function renderProductDetails(container, productId) {
 
             <!-- Customer Reviews Section -->
             <div class="pdp-specs-section" style="margin-top: 2rem;">
-              <h3>Ratings & Customer Reviews</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Ratings & Customer Reviews</h3>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-pdp-write-review" style="font-weight: 700;">
+                  ⭐ Write a Review
+                </button>
+              </div>
+
               <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 1.5rem; margin-top: 1rem;">
                 <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
                   <div style="text-align: center; padding-right: 1.5rem; border-right: 1px solid var(--border-subtle);">
@@ -289,8 +305,21 @@ export async function renderProductDetails(container, productId) {
                   </div>
                 </div>
 
-                <!-- Review Items -->
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Dynamic & Seed Reviews -->
+                <div style="display: flex; flex-direction: column; gap: 1rem;" id="pdp-reviews-list">
+                  ${dynamicReviews.map(r => `
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+                      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 4px;">
+                        <span class="badge badge-rating">${r.rating} ★</span>
+                        <strong style="font-size: 0.9rem;">${r.title || 'Verified Review'}</strong>
+                      </div>
+                      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">${r.comment}</p>
+                      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        ${r.userName || 'Customer'} • ${r.isVerifiedPurchase ? 'Verified Purchase ✓' : 'Customer Review'}
+                      </div>
+                    </div>
+                  `).join('')}
+
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 4px;">
                       <span class="badge badge-rating">5 ★</span>
@@ -301,19 +330,6 @@ export async function renderProductDetails(container, productId) {
                     </p>
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
                       Ananya K. • Verified Buyer • Bengaluru • Cash on Delivery
-                    </div>
-                  </div>
-
-                  <div style="border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 4px;">
-                      <span class="badge badge-rating">5 ★</span>
-                      <strong style="font-size: 0.9rem;">Value for money and prompt dispatch!</strong>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-                      Arrived securely packed with anti-static wrapping. Display is stunning and keyboard tactile feedback is excellent for coding.
-                    </p>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-                      Vikram M. • Verified Buyer • Mumbai • Cash on Delivery
                     </div>
                   </div>
                 </div>
@@ -401,7 +417,34 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     });
   }
 
-  // 4. Share & Referral Modal Handlers
+  // 4. Write Review Button
+  const writeRevBtn = container.querySelector('#btn-pdp-write-review');
+  if (writeRevBtn) {
+    writeRevBtn.addEventListener('click', async () => {
+      const ratingStr = prompt(`Rate "${product.name}" (1 to 5 Stars):`, '5');
+      if (!ratingStr) return;
+      const rating = parseInt(ratingStr, 10);
+      const title = prompt('Review Title:', 'Great build quality & fast delivery');
+      if (!title) return;
+      const comment = prompt('Your Review Comments:');
+      if (!comment) return;
+
+      try {
+        const res = await api.submitReview({
+          productId: product.id,
+          rating,
+          title,
+          comment
+        });
+        showToast(res.message || 'Review submitted! Thank you.', 'success');
+        renderProductDetails(container, product.id);
+      } catch (err) {
+        showToast(err.message || 'Failed to submit review.', 'error');
+      }
+    });
+  }
+
+  // 5. Share & Referral Modal Handlers
   const shareModal = container.querySelector('#share-referral-modal');
   const openShareModal = () => {
     if (shareModal) shareModal.classList.add('active');
@@ -454,7 +497,7 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     });
   }
 
-  // 5. Pincode checker
+  // 6. Pincode checker
   const checkPinBtn = container.querySelector('#btn-check-pincode');
   const pinInput = container.querySelector('#pdp-pincode-input');
   const resultDiv = container.querySelector('#pincode-check-result');

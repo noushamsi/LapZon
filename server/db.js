@@ -1023,6 +1023,267 @@ class JsonDb {
     return false;
   }
 
+  // --- USER PROFILE & ADDRESSES ---
+  updateUserProfile(userId, { name, phone, password }) {
+    const db = this.readDb();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return null;
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (password) user.password = password;
+    this.writeDb(db);
+    return { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone };
+  }
+
+  resetPassword(email, newPassword) {
+    const db = this.readDb();
+    const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) return false;
+    user.password = newPassword;
+    this.writeDb(db);
+    return true;
+  }
+
+  getUserAddresses(userId) {
+    const db = this.readDb();
+    if (!db.addresses) db.addresses = [];
+    return db.addresses.filter(a => a.userId === userId);
+  }
+
+  addUserAddress(userId, addressData) {
+    const db = this.readDb();
+    if (!db.addresses) db.addresses = [];
+    const userAddrs = db.addresses.filter(a => a.userId === userId);
+    const newAddress = {
+      id: `addr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId,
+      isDefault: userAddrs.length === 0,
+      createdAt: new Date().toISOString(),
+      ...addressData
+    };
+    db.addresses.unshift(newAddress);
+    this.writeDb(db);
+    return newAddress;
+  }
+
+  deleteUserAddress(userId, addressId) {
+    const db = this.readDb();
+    if (!db.addresses) db.addresses = [];
+    const initialLen = db.addresses.length;
+    db.addresses = db.addresses.filter(a => !(a.id === addressId && a.userId === userId));
+    this.writeDb(db);
+    return db.addresses.length < initialLen;
+  }
+
+  // --- WISHLIST ---
+  getUserWishlist(userId) {
+    const db = this.readDb();
+    if (!db.wishlists) db.wishlists = {};
+    const itemIds = db.wishlists[userId] || [];
+    const products = (db.products || []).filter(p => p.status === 'approved' && itemIds.includes(p.id));
+    return { itemIds, products };
+  }
+
+  toggleWishlist(userId, productId) {
+    const db = this.readDb();
+    if (!db.wishlists) db.wishlists = {};
+    if (!db.wishlists[userId]) db.wishlists[userId] = [];
+    const idx = db.wishlists[userId].indexOf(productId);
+    let added = false;
+    if (idx !== -1) {
+      db.wishlists[userId].splice(idx, 1);
+    } else {
+      db.wishlists[userId].push(productId);
+      added = true;
+    }
+    this.writeDb(db);
+    return { added, itemIds: db.wishlists[userId] };
+  }
+
+  // --- REVIEWS & RATINGS ---
+  getProductReviews(productId) {
+    const db = this.readDb();
+    if (!db.reviews) db.reviews = [];
+    return db.reviews.filter(r => r.productId === productId && (r.status === 'approved' || !r.status));
+  }
+
+  getAllReviews() {
+    const db = this.readDb();
+    return db.reviews || [];
+  }
+
+  addReview({ userId, userName, productId, rating, title, comment, reviewImage }) {
+    const db = this.readDb();
+    if (!db.reviews) db.reviews = [];
+
+    // Verify if user had a delivered order for this product
+    const orders = db.orders || [];
+    const hasDelivered = orders.some(o => 
+      (o.userId === userId || o.customer?.email === userId) && 
+      o.items?.some(i => i.id === productId) &&
+      o.status === 'Delivered'
+    );
+
+    const newReview = {
+      id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: userId || 'anonymous',
+      userName: userName || 'Verified Buyer',
+      productId,
+      rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+      title: title || 'Great laptop purchase!',
+      comment: comment || '',
+      reviewImage: reviewImage || null,
+      isVerifiedPurchase: hasDelivered,
+      status: 'approved', // Live approved by default, subject to moderation
+      createdAt: new Date().toISOString()
+    };
+
+    db.reviews.unshift(newReview);
+
+    // Recalculate product rating
+    const productReviews = db.reviews.filter(r => r.productId === productId);
+    const prod = db.products.find(p => p.id === productId);
+    if (prod && productReviews.length > 0) {
+      const avg = productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length;
+      prod.rating = Number(avg.toFixed(1));
+      prod.reviewsCount = productReviews.length;
+    }
+
+    this.writeDb(db);
+    return newReview;
+  }
+
+  approveReview(reviewId) {
+    const db = this.readDb();
+    if (!db.reviews) return false;
+    const review = db.reviews.find(r => r.id === reviewId);
+    if (review) {
+      review.status = 'approved';
+      this.writeDb(db);
+      return true;
+    }
+    return false;
+  }
+
+  deleteReview(reviewId) {
+    const db = this.readDb();
+    if (!db.reviews) return false;
+    db.reviews = db.reviews.filter(r => r.id !== reviewId);
+    this.writeDb(db);
+    return true;
+  }
+
+  // --- RETURNS & REPLACEMENTS ---
+  createReturnRequest({ orderId, userId, reason, description, images, type = 'Replacement' }) {
+    const db = this.readDb();
+    if (!db.returns) db.returns = [];
+
+    const order = db.orders.find(o => o.orderId === orderId);
+    if (!order) return { success: false, error: 'Order not found.' };
+
+    if (order.status !== 'Delivered') {
+      return { success: false, error: 'Returns or replacements can only be requested for Delivered orders.' };
+    }
+
+    const returnReq = {
+      id: `RET-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      orderId,
+      userId: userId || order.userId,
+      customer: order.customer,
+      items: order.items,
+      type, // 'Replacement' or 'Refund'
+      reason,
+      description,
+      images: images || [],
+      status: 'Return Requested', // Return Requested -> Approved -> Pickup Scheduled -> Product Received -> Completed
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      adminNotes: ''
+    };
+
+    db.returns.unshift(returnReq);
+    order.returnStatus = 'Return Requested';
+    order.returnId = returnReq.id;
+    this.writeDb(db);
+    return { success: true, returnRequest: returnReq };
+  }
+
+  getUserReturns(userId) {
+    const db = this.readDb();
+    if (!db.returns) return [];
+    return db.returns.filter(r => r.userId === userId);
+  }
+
+  getAllReturns() {
+    const db = this.readDb();
+    return db.returns || [];
+  }
+
+  updateReturnStatus(returnId, status, adminNotes = '') {
+    const db = this.readDb();
+    if (!db.returns) return null;
+    const req = db.returns.find(r => r.id === returnId);
+    if (!req) return null;
+    req.status = status;
+    req.adminNotes = adminNotes || req.adminNotes;
+    req.updatedAt = new Date().toISOString();
+
+    const order = db.orders.find(o => o.orderId === req.orderId);
+    if (order) {
+      order.returnStatus = status;
+    }
+
+    this.writeDb(db);
+    return req;
+  }
+
+  // --- SUPPORT TICKETS ---
+  createSupportTicket({ userId, name, email, orderId, subject, message }) {
+    const db = this.readDb();
+    if (!db.supportTickets) db.supportTickets = [];
+
+    const ticket = {
+      id: `TCK-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      userId: userId || null,
+      name,
+      email,
+      orderId: orderId || null,
+      subject,
+      message,
+      status: 'Open', // 'Open' | 'In Progress' | 'Resolved'
+      reply: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    db.supportTickets.unshift(ticket);
+    this.writeDb(db);
+    return ticket;
+  }
+
+  getUserTickets(userId, email) {
+    const db = this.readDb();
+    if (!db.supportTickets) return [];
+    return db.supportTickets.filter(t => (userId && t.userId === userId) || (email && t.email === email));
+  }
+
+  getAllTickets() {
+    const db = this.readDb();
+    return db.supportTickets || [];
+  }
+
+  replyTicket(ticketId, replyMessage, status = 'Resolved') {
+    const db = this.readDb();
+    if (!db.supportTickets) return null;
+    const ticket = db.supportTickets.find(t => t.id === ticketId);
+    if (!ticket) return null;
+    ticket.reply = replyMessage;
+    ticket.status = status;
+    ticket.updatedAt = new Date().toISOString();
+    this.writeDb(db);
+    return ticket;
+  }
+
   resetDatabase() {
     this.writeDb(SEED_DATA);
     return true;
