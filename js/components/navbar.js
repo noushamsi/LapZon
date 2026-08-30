@@ -11,7 +11,7 @@ import { openAuthModal } from './authModal.js';
 
 export function renderNavbar() {
   const currentHash = window.location.hash || '#welcome';
-  const isAdminRoute = currentHash.startsWith('#admin') && currentHash !== '#admin-login';
+  const isAdminRoute = currentHash.startsWith('#admin') || currentHash.startsWith('#owner');
   const user = auth.getUser();
   const isAdmin = auth.isAdmin();
   const cart = state.getCart();
@@ -19,40 +19,46 @@ export function renderNavbar() {
 
   let headerHtml = '';
 
-  if (isAdminRoute && isAdmin) {
+  if (isAdminRoute) {
     // =========================================================================
-    // OWNER / ADMIN HEADER (Rendered ONLY when actively inside #admin portal)
+    // OWNER / ADMIN HEADER (Rendered across all #admin and #admin-login routes)
     // =========================================================================
     headerHtml = `
       <header class="site-header site-header-admin">
         <div class="container">
           <div class="header-top">
             <!-- Brand -->
-            <a href="#admin" class="header-brand" id="brand-logo-link">
+            <a href="${isAdmin ? '#admin' : '#admin-login'}" class="header-brand" id="brand-logo-link">
               <div class="brand-logo-icon" style="background: linear-gradient(135deg, #ffe11b, #ff9f00); color: #0f172a;">👑</div>
               <div class="brand-text-wrap">
                 <span class="brand-title">LapKart <span style="color: #ffe11b; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Admin Center</span></span>
-                <span class="brand-subtitle">Owner Management & Fulfillment</span>
+                <span class="brand-subtitle">Owner Management & Security Gateway</span>
               </div>
             </a>
 
             <!-- Owner Action Links -->
             <div class="header-actions admin-header-nav">
-              <a href="#admin?tab=overview" class="nav-link-btn" id="nav-admin-dash">
-                📊 <span class="action-text">Analytics</span>
-              </a>
-              <a href="#admin?tab=orders" class="nav-link-btn" id="nav-admin-orders">
-                📦 <span class="action-text">Orders</span>
-              </a>
-              <a href="#admin?tab=inventory" class="nav-link-btn" id="nav-admin-prods">
-                💻 <span class="action-text">Inventory</span>
-              </a>
-              <a href="#admin?tab=returns" class="nav-link-btn" id="nav-admin-returns">
-                🔄 <span class="action-text">Returns</span>
-              </a>
-              <button type="button" class="nav-link-btn btn-logout-owner" id="nav-logout-btn" style="background: #ef4444; color: #fff; font-weight: 700; padding: 0.45rem 1rem;">
-                🚪 Logout
-              </button>
+              ${isAdmin ? `
+                <a href="#admin?tab=overview" class="nav-link-btn" id="nav-admin-dash">
+                  📊 <span class="action-text">Analytics</span>
+                </a>
+                <a href="#admin?tab=orders" class="nav-link-btn" id="nav-admin-orders">
+                  📦 <span class="action-text">Orders</span>
+                </a>
+                <a href="#admin?tab=inventory" class="nav-link-btn" id="nav-admin-prods">
+                  💻 <span class="action-text">Inventory</span>
+                </a>
+                <a href="#admin?tab=returns" class="nav-link-btn" id="nav-admin-returns">
+                  🔄 <span class="action-text">Returns</span>
+                </a>
+                <button type="button" class="nav-link-btn btn-logout-owner" id="nav-logout-btn" style="background: #ef4444; color: #fff; font-weight: 700; padding: 0.45rem 1rem;">
+                  🚪 Logout
+                </button>
+              ` : `
+                <a href="#store" class="nav-link-btn" style="background: rgba(255,255,255,0.15); color: #fff; font-weight: 700; border-radius: 8px; padding: 0.45rem 1.1rem; text-decoration: none;">
+                  ← Back to Customer Store
+                </a>
+              `}
             </div>
           </div>
         </div>
