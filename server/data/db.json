@@ -422,9 +422,46 @@
       "name": "Vikram Sundaram",
       "email": "cust_1788255944333@test.com",
       "password": "User@123"
+    },
+    {
+      "id": "usr-mtihxtre-um24",
+      "role": "user",
+      "createdAt": "2026-09-01T10:00:20.714Z",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788256820680@test.com",
+      "password": "User@123"
     }
   ],
   "products": [
+    {
+      "id": "lap-mtihxpsr-5lcx",
+      "rating": 5,
+      "reviewsCount": 1,
+      "isBestSeller": false,
+      "isDealOfTheDay": false,
+      "tag": "Verified & Approved",
+      "status": "approved",
+      "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+      "brand": "Dell",
+      "category": "Gaming",
+      "series": "Dell Series",
+      "processor": "Intel Core Ultra 9 185H",
+      "ram": "32GB DDR5",
+      "storage": "2TB NVMe SSD",
+      "graphics": "NVIDIA RTX 4080 12GB",
+      "display": "16-inch QHD+ 240Hz (2560x1600)",
+      "os": "Windows 11 Home",
+      "mrp": 299990,
+      "price": 269990,
+      "discount": 10,
+      "stock": 6,
+      "inStock": true,
+      "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "High-performance laptop engineered for speed, power efficiency, and stunning visuals."
+    },
     {
       "id": "lap-mtihezg1-wx6p",
       "rating": 5,
@@ -1808,6 +1845,186 @@
     }
   ],
   "orders": [
+    {
+      "orderId": "OD-LK-21166649",
+      "userId": "usr-mtihxtre-um24",
+      "createdAt": "2026-09-01T10:00:21.063Z",
+      "customer": {
+        "id": "addr-1788256820757-y3ty",
+        "userId": "usr-mtihxtre-um24",
+        "isDefault": true,
+        "createdAt": "2026-09-01T10:00:20.757Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788256820680@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtihxpsr-5lcx",
+          "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+          "price": 269990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Intel Core Ultra 9 185H"
+        }
+      ],
+      "pricing": {
+        "itemsTotal": 269990,
+        "discount": 30000,
+        "delivery": 0,
+        "totalAmount": 239990
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Paid (Cash Collected)",
+      "status": "Delivered",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-84181471IN",
+        "currentLocation": "Bengaluru Express Hub",
+        "expectedDate": "2026-09-04",
+        "deliveredAt": "2026-09-01T10:00:21.289Z"
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-09-01T10:00:21.063Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-09-01T10:00:21.113Z",
+          "completed": true,
+          "note": "Order verified and confirmed by Store Administrator."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": "2026-09-01T10:00:21.145Z",
+          "completed": true,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": "2026-09-01T10:00:21.179Z",
+          "completed": true,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": "2026-09-01T10:00:21.207Z",
+          "completed": true,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": "2026-09-01T10:00:21.244Z",
+          "completed": true,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": "2026-09-01T10:00:21.289Z",
+          "completed": true,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ],
+      "returnStatus": "Approved",
+      "returnId": "RET-1788256821392-hjiv"
+    },
+    {
+      "orderId": "OD-LK-61226786",
+      "userId": "usr-cust-01",
+      "createdAt": "2026-09-01T10:00:15.713Z",
+      "customer": {
+        "fullName": "Ananya Iyer",
+        "phone": "9812345678",
+        "houseNo": "Flat 101, Palm Meadows",
+        "street": "Airport Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560017",
+        "addressType": "Home",
+        "userId": "usr-cust-01",
+        "email": "customer@gmail.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtihxpsr-5lcx",
+          "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+          "price": 269990,
+          "mrp": 299990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Intel Core Ultra 9 185H | 32GB DDR5"
+        }
+      ],
+      "pricing": {
+        "itemsTotal": 299990,
+        "discount": 30000,
+        "delivery": 0,
+        "totalAmount": 269990
+      },
+      "paymentMethod": "Google Pay UPI (ananya@okhdfc)",
+      "paymentStatus": "Paid (Cash Collected)",
+      "status": "Delivered",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-BLR-998877IN",
+        "currentLocation": "Bengaluru Distribution Center",
+        "expectedDate": "2026-09-04",
+        "deliveredAt": "2026-09-01T10:00:15.810Z"
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-09-01T10:00:15.713Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-09-01T10:00:15.754Z",
+          "completed": true,
+          "note": "Admin approval and inventory reservation pending."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": "2026-09-01T10:00:15.754Z",
+          "completed": true,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": "2026-09-01T10:00:15.754Z",
+          "completed": true,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": "2026-09-01T10:00:15.754Z",
+          "completed": true,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": "2026-09-01T10:00:15.810Z",
+          "completed": true,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": "2026-09-01T10:00:15.810Z",
+          "completed": true,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ]
+    },
     {
       "orderId": "OD-LK-32345713",
       "userId": "usr-mtihf1ke-3pd0",
@@ -10181,6 +10398,20 @@
   ],
   "addresses": [
     {
+      "id": "addr-1788256820757-y3ty",
+      "userId": "usr-mtihxtre-um24",
+      "isDefault": true,
+      "createdAt": "2026-09-01T10:00:20.757Z",
+      "fullName": "Vikram Sundaram",
+      "phone": "9876543210",
+      "houseNo": "Villa 14, Palm Meadows",
+      "street": "Whitefield Main Road",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560066",
+      "addressType": "Home"
+    },
+    {
       "id": "addr-1788255944407-dguo",
       "userId": "usr-mtihf1ke-3pd0",
       "isDefault": true,
@@ -10941,9 +11172,25 @@
     ],
     "usr-mtihf1ke-3pd0": [
       "lap-mtihezg1-wx6p"
+    ],
+    "usr-mtihxtre-um24": [
+      "lap-mtihxpsr-5lcx"
     ]
   },
   "reviews": [
+    {
+      "id": "rev-1788256821357-nue1",
+      "userId": "usr-mtihxtre-um24",
+      "userName": "Vikram Sundaram",
+      "productId": "lap-mtihxpsr-5lcx",
+      "rating": 5,
+      "title": "Sensational Laptop!",
+      "comment": "High refresh rate screen, super fast boot, and seamless Cash on Delivery experience.",
+      "reviewImage": null,
+      "isVerifiedPurchase": true,
+      "status": "approved",
+      "createdAt": "2026-09-01T10:00:21.357Z"
+    },
     {
       "id": "rev-1788255945081-ez3v",
       "userId": "usr-mtihf1ke-3pd0",
@@ -11466,6 +11713,44 @@
     }
   ],
   "returns": [
+    {
+      "id": "RET-1788256821392-hjiv",
+      "orderId": "OD-LK-21166649",
+      "userId": "usr-mtihxtre-um24",
+      "customer": {
+        "id": "addr-1788256820757-y3ty",
+        "userId": "usr-mtihxtre-um24",
+        "isDefault": true,
+        "createdAt": "2026-09-01T10:00:20.757Z",
+        "fullName": "Vikram Sundaram",
+        "phone": "9876543210",
+        "houseNo": "Villa 14, Palm Meadows",
+        "street": "Whitefield Main Road",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560066",
+        "addressType": "Home",
+        "email": "cust_1788256820680@test.com"
+      },
+      "items": [
+        {
+          "id": "lap-mtihxpsr-5lcx",
+          "name": "Dell Alienware m16 R2 AI Gaming Laptop",
+          "price": 269990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "Intel Core Ultra 9 185H"
+        }
+      ],
+      "type": "Replacement",
+      "reason": "Minor display tint issue",
+      "description": "Customer requested 7-day doorstep replacement unit.",
+      "images": [],
+      "status": "Approved",
+      "createdAt": "2026-09-01T10:00:21.392Z",
+      "updatedAt": "2026-09-01T10:00:21.423Z",
+      "adminNotes": "Pickup scheduled via Ekart Express"
+    },
     {
       "id": "RET-1788255945118-jeqi",
       "orderId": "OD-LK-32345713",
@@ -12986,6 +13271,19 @@
     }
   ],
   "supportTickets": [
+    {
+      "id": "TCK-1788256821455-ecni",
+      "userId": "usr-mtihxtre-um24",
+      "name": "Vikram Sundaram",
+      "email": "cust_1788256820680@test.com",
+      "orderId": null,
+      "subject": "Warranty registration inquiry",
+      "message": "How do I register the 1-year onsite brand warranty?",
+      "status": "Resolved",
+      "reply": "Your warranty is automatically active with the invoice in My Orders!",
+      "createdAt": "2026-09-01T10:00:21.455Z",
+      "updatedAt": "2026-09-01T10:00:21.484Z"
+    },
     {
       "id": "TCK-1788255945180-02bi",
       "userId": "usr-mtihf1ke-3pd0",

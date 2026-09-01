@@ -43,11 +43,29 @@ if (fs.existsSync(envPath)) {
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
+
+// Enable trust proxy for Render / Cloud load balancers
+app.set('trust proxy', 1);
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health Check Endpoints for Render Zero-Downtime Deployments
+app.get(['/health', '/api/health', '/ping'], (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'LapZon Full-Stack E-Commerce',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 // Request Logger
 app.use((req, res, next) => {
@@ -954,20 +972,37 @@ app.post('/api/admin/reset-data', requireAdmin, (req, res) => {
 // 5. STATIC ASSETS & SINGLE PAGE APP (SPA) ROUTING
 // ==========================================================================
 
-// Serve static frontend files
-app.use(express.static(ROOT_DIR));
+// Explicit static mounts for frontend directories with caching
+app.use('/css', express.static(path.join(ROOT_DIR, 'css'), { maxAge: '1d' }));
+app.use('/js', express.static(path.join(ROOT_DIR, 'js'), { maxAge: '1d' }));
+app.use('/assets', express.static(path.join(ROOT_DIR, 'assets'), { maxAge: '7d' }));
+app.use('/scratch', express.static(path.join(ROOT_DIR, 'scratch')));
 
-// Fallback all non-API requests to index.html
+// Serve root static files (index.html, favicon, robots.txt, etc.)
+app.use(express.static(ROOT_DIR, {
+  index: 'index.html',
+  dotfiles: 'ignore'
+}));
+
+// Explicit Root Route handler to guarantee Render loads index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'index.html'));
+});
+
+// Fallback all non-API GET requests to index.html for client-side routing
 app.get('*', (req, res) => {
-  if (req.url.startsWith('/api/')) {
-    return res.status(404).json({ success: false, error: 'API endpoint not found.' });
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, error: `API endpoint "${req.path}" not found.` });
   }
   res.sendFile(path.join(ROOT_DIR, 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`⚡ LapKart Full-Stack Server running at: http://localhost:${PORT}`);
+// Start Full-Stack Server
+const server = app.listen(PORT, HOST, () => {
+  console.log(`⚡ LapZon Full-Stack Server running at: http://${HOST}:${PORT}`);
+  console.log(`🌐 Public / Cloud Host: ${HOST}:${PORT}`);
   console.log(`🔐 Admin Login: admin@lapkart.com / Admin@123`);
   console.log(`👤 Customer Login: customer@gmail.com / User@123`);
 });
+
+export { app, server };
