@@ -702,7 +702,7 @@
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
 }
 
 .timeline-h-step {
@@ -712,77 +712,74 @@
   text-align: center;
   position: relative;
   z-index: 2;
-  width: 14%;
+  width: 16%;
 }
 
 .timeline-h-node {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: var(--bg-surface);
-  border: 3px solid var(--border-subtle);
+  background: #ffffff;
+  border: 2.5px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
   color: var(--text-muted);
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 0.6rem;
-  transition: all var(--transition-normal);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .timeline-h-step.completed .timeline-h-node {
-  background-color: var(--accent-emerald);
-  border-color: var(--accent-emerald);
+  background: #16a34a;
+  border-color: #16a34a;
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(56, 142, 60, 0.4);
 }
 
 .timeline-h-step.active .timeline-h-node {
-  background-color: var(--primary-blue);
-  border-color: var(--primary-blue);
+  background: #ff6b00;
+  border-color: #ff6b00;
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(40, 116, 240, 0.5);
-  animation: pulseBlue 2s infinite;
-}
-
-@keyframes pulseBlue {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  box-shadow: 0 0 0 4px rgba(255, 107, 0, 0.2);
 }
 
 .timeline-h-label {
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text-secondary);
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .timeline-h-step.completed .timeline-h-label {
-  color: var(--accent-emerald);
-  font-weight: 700;
+  color: #16a34a;
+  font-weight: 800;
 }
 
 .timeline-h-step.active .timeline-h-label {
-  color: var(--primary-blue);
-  font-weight: 700;
+  color: var(--primary-orange);
+  font-weight: 800;
 }
 
 /* Connecting Line */
 .timeline-h-line {
   position: absolute;
-  top: 19px;
-  left: 7%;
-  right: 7%;
-  height: 4px;
-  background-color: var(--border-subtle);
+  top: 22px;
+  left: 8%;
+  right: 8%;
+  height: 5px;
+  background-color: #e2e8f0;
+  border-radius: 999px;
   z-index: 1;
+  overflow: hidden;
 }
 
 .timeline-h-progress-fill {
   height: 100%;
-  background-color: var(--accent-emerald);
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #16a34a 0%, #ff7a00 100%);
+  box-shadow: 0 0 12px rgba(255, 107, 0, 0.5);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Detailed Vertical Checkpoints Log */

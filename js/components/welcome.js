@@ -1,294 +1,505 @@
 /**
- * Welcome Page Component
- * Professional laptop landing page with Hero, Featured Brands, Top Deals,
- * Why Choose Us, Verified Customer Reviews, and Comprehensive Footer.
+ * Welcome Page Component - LapZon
+ * Modern Premium E-Commerce UI (Focused Exclusively on Laptops)
+ * 
+ * Features:
+ * - Clean White Surface with Orange Gradient Accents & Dark Navy Typography
+ * - Photorealistic Flagship Laptop Hero Showcase Banner
+ * - Official Top Brands Interactive Strip
+ * - Live Featured Laptops & Best Deals Grid with Add to Cart & Buy Now
+ * - The LapZon Advantage & Trust Highlights
+ * - Verified Customer Reviews Carousel
+ * - Modernized LapZon Footer with Trust Badges & Direct Support
  */
 
-export function renderWelcomePage(container) {
+import { api } from '../services/api.js';
+import { auth } from '../services/auth.js';
+import { state } from '../state.js';
+import { openAuthModal } from './authModal.js';
+import { showToast, trigger3DRefresh } from '../app.js';
+
+export async function renderWelcomePage(container) {
+  const user = auth.getUser();
+
   container.innerHTML = `
-    <div class="welcome-page">
-      <!-- Hero Section -->
-      <section class="welcome-hero">
+    <div class="welcome-page fade-in-section">
+      
+      <!-- ================================================================= -->
+      <!-- 1. MODERN HERO SHOWCASE SECTION -->
+      <!-- ================================================================= -->
+      <section class="welcome-hero-premium">
         <div class="container">
-          <div class="hero-grid">
-            <div class="hero-content">
-              <div class="hero-badge-pill">
-                <span class="pulse-dot"></span>
-                <span>India's Premier Dedicated Laptop Superstore</span>
+          <div class="hero-premium-grid">
+            
+            <!-- Left Hero Content -->
+            <div class="hero-left-content">
+              <div class="hero-tag-badge">
+                <span class="hero-tag-dot"></span>
+                <span>Quality Products, Trusted Service</span>
               </div>
               
-              <h1 class="hero-title">
-                Find Your Ultimate <br/>
-                <span class="gradient-text">Dream Laptop</span>
+              <h1 class="hero-main-heading">
+                Explore Premium Laptops <br/>
+                <span class="hero-gradient-text">Built for Excellence</span>
               </h1>
               
-              <p class="hero-desc">
-                From ultra-portable Apple MacBooks and AI workhorses to high-FPS ASUS ROG gaming rigs.
-                Enjoy authentic 1-year brand warranty, doorstep Cash on Delivery, and instant air dispatch across India.
+              <p class="hero-description-text">
+                Explore premium laptops from top brands, built for performance, productivity and everyday excellence. Shop smart. Choose better.
               </p>
               
-              <div class="hero-cta-group" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <a href="#store" class="btn-get-started" id="welcome-get-started-btn">
-                  <span>⚡ Get Started</span>
-                  <span style="font-size: 1.25rem;">➔</span>
+              <!-- CTA Button Group -->
+              <div class="hero-btn-actions">
+                <a href="#store" class="btn-hero-primary" id="hero-btn-explore">
+                  <span>⚡ Explore Laptops</span>
+                  <span class="btn-arrow">➔</span>
                 </a>
-                <a href="#store" class="btn-explore-outline" id="welcome-explore-laptops-btn" style="background: rgba(255,255,255,0.08); border: 2px solid var(--primary-yellow); color: #fff; padding: 0.8rem 1.75rem; border-radius: 8px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                  💻 Explore Laptops
-                </a>
+                <button type="button" class="btn-hero-secondary" id="hero-btn-auth">
+                  <span>${user ? '👤 My Dashboard' : '🔑 Sign In'}</span>
+                </button>
               </div>
-              
-              <div class="hero-stats">
-                <div class="hero-stat-item">
-                  <span class="stat-number">100%</span>
-                  <span class="stat-label">Original & Genuine</span>
+
+              <!-- Key Metrics Strip -->
+              <div class="hero-stats-row">
+                <div class="hero-stat-box">
+                  <div class="stat-num">100%</div>
+                  <div class="stat-lbl">Authentic Brands</div>
                 </div>
-                <div class="hero-stat-item">
-                  <span class="stat-number">24 Hr</span>
-                  <span class="stat-label">Express Air Dispatch</span>
+                <div class="hero-stat-box">
+                  <div class="stat-num">24 Hr</div>
+                  <div class="stat-lbl">Express Air Dispatch</div>
                 </div>
-                <div class="hero-stat-item">
-                  <span class="stat-number">COD</span>
-                  <span class="stat-label">Cash on Delivery</span>
+                <div class="hero-stat-box">
+                  <div class="stat-num">COD</div>
+                  <div class="stat-lbl">Doorstep Pay</div>
+                </div>
+                <div class="hero-stat-box">
+                  <div class="stat-num">7-Day</div>
+                  <div class="stat-lbl">Replacement</div>
                 </div>
               </div>
             </div>
 
-            <!-- Visual Showcase -->
-            <div class="hero-visual-wrap">
-              <div class="hero-laptop-card">
-                <div class="floating-badge badge-top-left">
-                  <span>⚡ Apple M3 Pro 14"</span>
-                </div>
+            <!-- Right Hero Showcase Image (Single Flagship Laptop in Clean Solid Showcase Card) -->
+            <div class="hero-right-visual">
+              <div class="hero-image-card">
                 <img 
-                  src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80" 
-                  alt="Flagship Laptop Showcase" 
-                  class="hero-laptop-img"
+                  src="assets/images/hero-single-laptop.jpg" 
+                  alt="LapZon Premium Flagship Laptop" 
+                  class="hero-flagship-img"
                 />
-                <div class="floating-badge badge-bottom-right">
-                  <span>🔥 NVIDIA RTX 4090 Monster Ready</span>
-                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
 
-      <!-- Trust Strip -->
-      <section class="welcome-trust-strip">
+      <!-- ================================================================= -->
+      <!-- 2. POPULAR OFFICIAL BRANDS STRIP (Clean Modern Brand Cards) -->
+      <!-- ================================================================= -->
+      <section class="popular-brands-section">
         <div class="container">
-          <div class="trust-grid">
-            <div class="trust-card">
-              <div class="trust-icon">🛡️</div>
-              <div class="trust-info">
-                <h5>100% Brand Assured</h5>
-                <p>1-Year Official Manufacturer Warranty</p>
-              </div>
-            </div>
-            <div class="trust-card">
-              <div class="trust-icon">⚡</div>
-              <div class="trust-info">
-                <h5>Express Air Delivery</h5>
-                <p>19,000+ PIN Codes Across India</p>
-              </div>
-            </div>
-            <div class="trust-card">
-              <div class="trust-icon">💵</div>
-              <div class="trust-info">
-                <h5>Cash on Delivery (COD)</h5>
-                <p>Inspect Outer Sealed Box Before Paying</p>
-              </div>
-            </div>
-            <div class="trust-card">
-              <div class="trust-icon">🔄</div>
-              <div class="trust-info">
-                <h5>7-Day Replacement</h5>
-                <p>Hassle-Free Doorstep Exchange</p>
-              </div>
-            </div>
+          <div class="brands-section-header">
+            <span class="sub-pill">Official Store Partners</span>
+            <h2 class="section-title-sm">Shop by Leading Laptop Brands</h2>
           </div>
-        </div>
-      </section>
-
-      <!-- Top Brands Strip -->
-      <section style="padding: 2.5rem 0; background: #ffffff; border-bottom: 1px solid #e2e8f0;">
-        <div class="container" style="text-align: center;">
-          <h3 style="font-size: 1.1rem; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5rem;">
-            Featured Official Brand Partners
-          </h3>
-          <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; flex-wrap: wrap;">
-            ${['Apple', 'ASUS', 'Dell', 'HP', 'Lenovo', 'Acer', 'MSI', 'Samsung'].map(brand => `
-              <a href="#store" class="brand-chip" style="padding: 0.6rem 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 800; font-size: 1.1rem; color: #1e293b; text-decoration: none; transition: transform 0.2s ease, box-shadow 0.2s ease;">
-                ${brand}
+          
+          <div class="brands-clean-grid">
+            ${[
+              { name: 'Apple', tag: 'MacBook M3 Pro & Air', icon: '🍎' },
+              { name: 'ASUS', tag: 'ROG, TUF & ZenBook', icon: '⚡' },
+              { name: 'Dell', tag: 'XPS, Alienware & Inspiron', icon: '💻' },
+              { name: 'HP', tag: 'Spectre, OMEN & Pavilion', icon: '✨' },
+              { name: 'Lenovo', tag: 'ThinkPad, Legion & Yoga', icon: '🔥' },
+              { name: 'Acer', tag: 'Predator & Swift Go', icon: '🚀' },
+              { name: 'MSI', tag: 'Raider, Stealth & Cyborg', icon: '🎯' },
+              { name: 'Samsung', tag: 'Galaxy Book4 Ultra', icon: '⭐' }
+            ].map(b => `
+              <a href="#store?brand=${encodeURIComponent(b.name)}" class="brand-clean-card hover-lift">
+                <span class="brand-icon">${b.icon}</span>
+                <span class="brand-name">${b.name}</span>
+                <span class="brand-tag">${b.tag}</span>
               </a>
             `).join('')}
           </div>
         </div>
       </section>
 
-      <!-- Categories Highlights -->
-      <section class="welcome-categories">
+      <!-- ================================================================= -->
+      <!-- 3. FEATURED LAPTOPS & BEST DEALS (Live Store Products) -->
+      <!-- ================================================================= -->
+      <section class="featured-laptops-section">
         <div class="container">
-          <div class="section-header-center">
-            <h2>Shop By Your Purpose</h2>
-            <p>Tailored laptop configurations engineered for your exact workload</p>
-          </div>
-
-          <div class="category-cards-grid">
-            <a href="#store?cat=Gaming" class="cat-card">
-              <div class="cat-card-icon">🎮</div>
-              <h4>Gaming Laptops</h4>
-              <p>High refresh rate QHD screens, RTX 40-series GPUs, liquid cooling</p>
-              <span class="cat-card-cta">View Gaming Rigs →</span>
-            </a>
-
-            <a href="#store?cat=Ultrabook" class="cat-card">
-              <div class="cat-card-icon">🪶</div>
-              <h4>Thin & Light Ultrabooks</h4>
-              <p>All-day 18hr battery life, featherlight chassis, stunning OLEDs</p>
-              <span class="cat-card-cta">Explore Ultrabooks →</span>
-            </a>
-
-            <a href="#store?cat=Business" class="cat-card">
-              <div class="cat-card-icon">💼</div>
-              <h4>Business & AI Power</h4>
-              <p>Intel Core Ultra with NPU, fingerprint security, 2-in-1 AMOLED</p>
-              <span class="cat-card-cta">View Business →</span>
-            </a>
-
-            <a href="#store?cat=Student" class="cat-card">
-              <div class="cat-card-icon">🎓</div>
-              <h4>Student & Everyday</h4>
-              <p>Budget-friendly champions with fast SSDs, MS Office & sturdy build</p>
-              <span class="cat-card-cta">Explore Student Deals →</span>
-            </a>
-          </div>
-
-          <!-- Featured Offer Banner -->
-          <div class="welcome-deals-banner">
-            <div class="deals-banner-content">
-              <h3>Mega Laptop Fest is Live!</h3>
-              <p>Save up to ₹40,000 + Extra ₹5,000 instant discount using promo code <strong>LAPTOP5000</strong> at checkout.</p>
-              <a href="#store" class="btn btn-orange btn-lg">Shop The Sale Now</a>
+          <div class="section-header-flex">
+            <div>
+              <div class="badge badge-tag">Handpicked Performance</div>
+              <h2 class="section-main-title">Featured Laptops & Best Deals</h2>
+              <p class="section-subtext">Engineered for gaming, creators, coding, and executive productivity.</p>
             </div>
-            <div style="font-size: 5rem; line-height: 1;">
-              💻🏷️
+            <a href="#store" class="btn btn-outline-primary btn-sm">View All Laptops ➔</a>
+          </div>
+
+          <!-- Product Cards Container -->
+          <div id="welcome-featured-products-grid" class="featured-products-grid">
+            <!-- Loading Skeletons -->
+            ${[1, 2, 3, 4].map(() => `
+              <div class="product-skeleton-card">
+                <div class="skeleton-shimmer skeleton-img"></div>
+                <div class="skeleton-shimmer skeleton-line" style="width: 40%; margin-top: 12px;"></div>
+                <div class="skeleton-shimmer skeleton-line" style="width: 80%;"></div>
+                <div class="skeleton-shimmer skeleton-line" style="width: 60%;"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- 4. THE LAPZON ADVANTAGE -->
+      <!-- ================================================================= -->
+      <section class="lapzon-advantage-section">
+        <div class="container">
+          <div class="advantage-header">
+            <div class="badge badge-tag">Why Buy From Us</div>
+            <h2 class="section-main-title">The LapZon Assurance</h2>
+            <p class="section-subtext">Quality Products, Trusted Service across all 19,000+ PIN codes in India.</p>
+          </div>
+
+          <div class="advantage-grid">
+            <div class="advantage-card">
+              <div class="adv-icon-wrap">🛡️</div>
+              <h3>100% Genuine Brand Sealed</h3>
+              <p>Every laptop comes in manufacturer factory-sealed packaging with full 1-year official brand warranty and GST invoice.</p>
+            </div>
+
+            <div class="advantage-card">
+              <div class="adv-icon-wrap">⚡</div>
+              <h3>Free Express Air Dispatch</h3>
+              <p>Priority air shipping with tamper-evident security tape, zero transit damage guarantee, and live GPS checkpoint tracking.</p>
+            </div>
+
+            <div class="advantage-card">
+              <div class="adv-icon-wrap">💵</div>
+              <h3>Cash on Delivery with Inspection</h3>
+              <p>Verify the outer brand seal and package integrity at your doorstep before handing over cash or UPI payment.</p>
+            </div>
+
+            <div class="advantage-card">
+              <div class="adv-icon-wrap">🔄</div>
+              <h3>7-Day Doorstep Replacement</h3>
+              <p>Experiencing hardware issues out of the box? Our dedicated support team arranges an express doorstep replacement immediately.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Customer Reviews & Social Proof -->
-      <section style="padding: 4rem 0; background: #ffffff;">
+      <!-- ================================================================= -->
+      <!-- 5. VERIFIED BUYER REVIEWS -->
+      <!-- ================================================================= -->
+      <section class="customer-reviews-section">
         <div class="container">
-          <div class="section-header-center">
-            <h2>Trusted by 100,000+ Laptop Enthusiasts</h2>
-            <p>Read real verified buyer experiences across India</p>
+          <div class="reviews-header">
+            <div class="badge badge-tag">Customer Stories</div>
+            <h2 class="section-main-title">Trusted by 50,000+ Students & Professionals</h2>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
-            
-            <div style="background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div class="reviews-grid">
+            <div class="review-glass-card">
+              <div class="review-top-row">
                 <span class="badge badge-rating">5.0 ★</span>
-                <span style="font-size: 0.75rem; color: #16a34a; font-weight: 700;">Verified Buyer ✓</span>
+                <span class="verified-buyer-text">✓ Verified Buyer</span>
               </div>
-              <p style="font-size: 0.9rem; color: #334155; line-height: 1.5; margin: 0 0 1rem;">
-                "Got my MacBook Pro M3 delivered within 24 hours in Bengaluru. The tamper-evident packaging gave total peace of mind for Cash on Delivery!"
+              <p class="review-body-text">
+                "Ordered the Apple MacBook Air M3. Received the sealed package within 24 hours. The screen quality and battery life are phenomenal. Seamless delivery experience!"
               </p>
-              <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a;">— Rahul M., Software Engineer</div>
+              <div class="review-author-info">
+                <strong>Ananya Sharma</strong>
+                <span>UI/UX Designer, Bengaluru</span>
+              </div>
             </div>
 
-            <div style="background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div class="review-glass-card">
+              <div class="review-top-row">
                 <span class="badge badge-rating">5.0 ★</span>
-                <span style="font-size: 0.75rem; color: #16a34a; font-weight: 700;">Verified Buyer ✓</span>
+                <span class="verified-buyer-text">✓ Verified Buyer</span>
               </div>
-              <p style="font-size: 0.9rem; color: #334155; line-height: 1.5; margin: 0 0 1rem;">
-                "Shared my referral link with college friends and unlocked the 30% discount coupon. Saved over ₹22,000 on my ASUS ROG Strix gaming laptop!"
+              <p class="review-body-text">
+                "Unlocked the 30% discount coupon by sharing with my college friends and saved ₹24,000 on the ASUS ROG Strix G16. Best platform for laptop enthusiasts!"
               </p>
-              <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a;">— Sneha R., Design Student</div>
+              <div class="review-author-info">
+                <strong>Rohan Verma</strong>
+                <span>CS Engineering Student, Delhi</span>
+              </div>
             </div>
 
-            <div style="background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div class="review-glass-card">
+              <div class="review-top-row">
                 <span class="badge badge-rating">5.0 ★</span>
-                <span style="font-size: 0.75rem; color: #16a34a; font-weight: 700;">Verified Buyer ✓</span>
+                <span class="verified-buyer-text">✓ Verified Buyer</span>
               </div>
-              <p style="font-size: 0.9rem; color: #334155; line-height: 1.5; margin: 0 0 1rem;">
-                "Clean store interface, no spam or non-laptop items. Detailed technical specs and fast live tracking made the purchase super seamless."
+              <p class="review-body-text">
+                "Clear technical specifications, no fake discount tricks, and express customer support. LapZon is hands-down the best laptop-focused store in India."
               </p>
-              <div style="font-weight: 800; font-size: 0.88rem; color: #0f172a;">— Amit V., Tech Lead</div>
+              <div class="review-author-info">
+                <strong>Vikram Patel</strong>
+                <span>Tech Lead, Hyderabad</span>
+              </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      <!-- Comprehensive Footer -->
-      <footer style="background: #0f172a; color: #94a3b8; padding: 4rem 0 2rem; border-top: 1px solid #1e293b;">
+      <!-- ================================================================= -->
+      <!-- 6. CLEAN, PROFESSIONAL LAPZON FOOTER -->
+      <!-- ================================================================= -->
+      <footer class="lapzon-premium-footer">
         <div class="container">
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2.5rem; margin-bottom: 3rem;">
+          
+          <!-- Top Grid -->
+          <div class="footer-columns-grid">
             
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;">
-                <span style="font-size: 1.8rem;">⚡</span>
-                <span style="font-size: 1.5rem; font-weight: 900; color: #fff;">LapKart <span style="color: #ff9f00;">Plus</span></span>
+            <!-- Brand Column -->
+            <div class="footer-brand-col">
+              <div class="footer-brand-header">
+                <img src="assets/images/lapzon-logo.png" alt="LapZon Official Brand Logo" class="footer-logo-img" />
+                <div class="footer-brand-name">
+                  <span>Lap<span class="highlight-orange">Z</span>on</span>
+                  <small class="footer-tagline">Quality Products, Trusted Service</small>
+                </div>
               </div>
-              <p style="font-size: 0.88rem; line-height: 1.6; color: #94a3b8; max-width: 320px;">
-                India's premier dedicated laptop superstore. 100% authentic global laptops, doorstep Cash on Delivery, and express air fulfillment.
+              <p class="footer-about-p">
+                India's premier dedicated laptop shopping platform. 100% genuine brand warranty, verified stock availability, secure UPI & COD payments, and express courier dispatch.
               </p>
-              <div style="margin-top: 1rem; font-size: 0.85rem; color: #cbd5e1;">
-                📍 Tech Park Towers, 100 Feet Rd, Indiranagar, Bengaluru - 560038
+              <div class="footer-support-contact-box">
+                <div class="contact-line">
+                  <span>📞 Call / WhatsApp:</span>
+                  <strong>+91 8123019785</strong>
+                </div>
+                <div class="contact-line">
+                  <span>✉️ Email Support:</span>
+                  <a href="mailto:noushamsi09@gmail.com">noushamsi09@gmail.com</a>
+                </div>
               </div>
             </div>
 
-            <div>
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 1rem;">Laptop Catalog</h4>
-              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                <li><a href="#store?cat=Gaming" style="color: #94a3b8; text-decoration: none;">Gaming Laptops</a></li>
-                <li><a href="#store?cat=Ultrabook" style="color: #94a3b8; text-decoration: none;">Thin & Light Ultrabooks</a></li>
-                <li><a href="#store?cat=Business" style="color: #94a3b8; text-decoration: none;">Business & AI Laptops</a></li>
-                <li><a href="#store?cat=Student" style="color: #94a3b8; text-decoration: none;">Student & Everyday</a></li>
-                <li><a href="#store" style="color: #94a3b8; text-decoration: none;">All Laptops</a></li>
+            <!-- Categories -->
+            <div class="footer-links-col">
+              <h4>Popular Categories</h4>
+              <ul>
+                <li><a href="#store?cat=Gaming">⚡ Gaming Laptops (RTX 40 Series)</a></li>
+                <li><a href="#store?cat=Ultrabook">✨ Thin & Light Ultrabooks</a></li>
+                <li><a href="#store?cat=Business">💼 Business & AI Workstations</a></li>
+                <li><a href="#store?cat=Student">🎓 Student & Coding Laptops</a></li>
+                <li><a href="#store">💻 View All 30+ Laptops</a></li>
               </ul>
             </div>
 
-            <div>
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 1rem;">Help & Support</h4>
-              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                <li><a href="#support" style="color: #94a3b8; text-decoration: none;">Help Center & FAQ</a></li>
-                <li><a href="#my-orders" style="color: #94a3b8; text-decoration: none;">Track Active Order</a></li>
-                <li><a href="#legal/shipping-policy" style="color: #94a3b8; text-decoration: none;">Shipping Policy</a></li>
-                <li><a href="#legal/return-policy" style="color: #94a3b8; text-decoration: none;">7-Day Replacement Policy</a></li>
-                <li><a href="#legal/warranty" style="color: #94a3b8; text-decoration: none;">1-Year Warranty Details</a></li>
+            <!-- Customer Care -->
+            <div class="footer-links-col">
+              <h4>Customer Support</h4>
+              <ul>
+                <li><a href="#support">💬 Help Center & Live Tickets</a></li>
+                <li><a href="#my-orders">📍 Track Active Order</a></li>
+                <li><a href="#legal/return-policy">🔄 7-Day Replacement Guarantee</a></li>
+                <li><a href="#legal/shipping-policy">🚚 Express Delivery Information</a></li>
+                <li><a href="#legal/warranty">🛡️ Brand Warranty Guide</a></li>
               </ul>
             </div>
 
-            <div>
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: #fff; text-transform: uppercase; margin-bottom: 1rem;">Company & Legal</h4>
-              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.85rem;">
-                <li><a href="#legal/about" style="color: #94a3b8; text-decoration: none;">About LapKart Plus</a></li>
-                <li><a href="#legal/contact" style="color: #94a3b8; text-decoration: none;">Contact Specialists</a></li>
-                <li><a href="#legal/privacy-policy" style="color: #94a3b8; text-decoration: none;">Privacy Policy</a></li>
-                <li><a href="#legal/terms" style="color: #94a3b8; text-decoration: none;">Terms & Conditions</a></li>
-                <li><a href="#admin-login" style="color: #64748b; font-size: 0.75rem; text-decoration: none;">Store Administrator</a></li>
+            <!-- Trust Highlights -->
+            <div class="footer-links-col">
+              <h4>LapZon Trust</h4>
+              <ul class="trust-list">
+                <li>✓ 100% Authentic Brand Laptops</li>
+                <li>✓ Sealed Manufacturer Packaging</li>
+                <li>✓ Doorstep Cash on Delivery (COD)</li>
+                <li>✓ 7-Day Doorstep Replacement</li>
+                <li>✓ 256-Bit SSL Encrypted Checkout</li>
               </ul>
             </div>
 
           </div>
 
-          <div style="border-top: 1px solid #1e293b; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem;">
-            <div>
-              © 2026 LapKart Plus Technologies Pvt. Ltd. All rights reserved. Sells ONLY laptops with 100% genuine warranty.
+          <!-- Bottom Copyright Bar -->
+          <div class="footer-bottom-bar">
+            <div class="copyright-text">
+              © 2026 LapZon India Pvt. Ltd. All rights reserved. Quality Products, Trusted Service.
             </div>
-            <div style="display: flex; gap: 1.5rem;">
-              <span>🛡️ 100% Authentic Devices</span>
-              <span>💵 Doorstep COD</span>
+            <div class="footer-security-badges">
               <span>🔒 256-Bit SSL Encrypted</span>
+              <span>⚡ Express Air Delivery Partner</span>
+              <span>🛡️ Authorized Brand Retailer</span>
             </div>
           </div>
+
         </div>
       </footer>
+
     </div>
   `;
+
+  // Attach Event Handlers
+  const authCtaBtn = container?.querySelector ? container.querySelector('#hero-btn-auth') : document.getElementById('hero-btn-auth');
+  if (authCtaBtn) {
+    authCtaBtn.addEventListener('click', () => {
+      if (auth.isAuthenticated()) {
+        window.location.hash = auth.isAdmin() ? '#admin' : '#user-dashboard';
+      } else {
+        openAuthModal('login', { redirectHash: '#user-dashboard' });
+      }
+    });
+  }
+
+  // Load and render Featured Products in the grid
+  loadFeaturedProducts(container);
+}
+
+async function loadFeaturedProducts(container) {
+  const grid = container?.querySelector ? container.querySelector('#welcome-featured-products-grid') : document.getElementById('welcome-featured-products-grid');
+  if (!grid) return;
+
+  try {
+    const res = await api.getProducts();
+    const products = (res.products || res || []).slice(0, 8); // Top 8 featured laptops
+
+    if (!products.length) {
+      grid.innerHTML = `<p style="text-align: center; color: #64748b; grid-column: 1/-1;">No laptops available at the moment.</p>`;
+      return;
+    }
+
+    grid.innerHTML = products.map(p => {
+      const discountPct = p.originalPrice > p.price 
+        ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
+        : 18;
+      const originalPrice = p.originalPrice || Math.round(p.price * 1.22);
+      const isWishlisted = state.getWishlist().includes(p.id);
+
+      return `
+        <div class="product-modern-card" data-id="${p.id}" style="position: relative;">
+          <!-- Wishlist Button -->
+          <button 
+            type="button" 
+            class="welcome-wishlist-btn ${isWishlisted ? 'active' : ''}" 
+            data-id="${p.id}"
+            title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}"
+            style="position: absolute; top: 12px; right: 12px; z-index: 5; background: #ffffff; border: 1.5px solid #e2e8f0; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform 0.2s ease;"
+          >
+            ${isWishlisted ? '❤️' : '🤍'}
+          </button>
+
+          <!-- Top Badge -->
+          <span class="card-badge-top">⭐ ${p.brand}</span>
+
+          <!-- Laptop Image -->
+          <a href="#product/${p.id}" class="card-image-wrap">
+            <img 
+              src="${p.image}" 
+              alt="${p.name}" 
+              class="card-laptop-img" 
+              loading="lazy" 
+            />
+          </a>
+
+          <!-- Details -->
+          <div class="card-info-wrap">
+            <div class="card-rating-row">
+              <span class="rating-pill">${p.rating || 4.8} ★</span>
+              <span class="reviews-count">(${p.reviewsCount || p.reviews?.length || 42} reviews)</span>
+              <span class="stock-status-pill">In Stock</span>
+            </div>
+
+            <a href="#product/${p.id}" class="card-title-link">
+              <h3 class="card-laptop-title" title="${p.name}">${p.name}</h3>
+            </a>
+
+            <!-- Key Specs Chips -->
+            <div class="card-specs-chips">
+              <span class="spec-chip">${p.ram || '16GB RAM'}</span>
+              <span class="spec-chip">${p.storage || '512GB SSD'}</span>
+              <span class="spec-chip">${p.processor ? p.processor.split(' ')[0] : 'Intel/M-Series'}</span>
+            </div>
+
+            <!-- Pricing Row -->
+            <div class="card-pricing-row">
+              <div class="price-stack">
+                <span class="price-current">₹${p.price.toLocaleString('en-IN')}</span>
+                <span class="price-original">₹${originalPrice.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="card-actions-row">
+              <button type="button" class="btn-card-cart btn-add-cart-action" data-id="${p.id}">
+                🛒 Add to Cart
+              </button>
+              <button type="button" class="btn-card-buy btn-buy-now-action" data-id="${p.id}">
+                ⚡ Buy Now
+              </button>
+            </div>
+
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach Add to Cart and Buy Now button listeners
+    grid.querySelectorAll('.btn-add-cart-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const pId = btn.dataset.id;
+        const prod = products.find(item => item.id === pId);
+        if (prod) {
+          state.addToCart(prod.id, 1, prod);
+          showToast(`Added ${prod.name} to your Cart 🛒`, 'success');
+        }
+      });
+    });
+
+    grid.querySelectorAll('.btn-buy-now-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const pId = btn.dataset.id;
+        const prod = products.find(item => item.id === pId);
+        if (prod) {
+          state.addToCart(prod.id, 1, prod);
+          if (!auth.isAuthenticated()) {
+            openAuthModal('login', {
+              action: 'buy_now',
+              productId: prod.id,
+              productData: prod,
+              returnHash: '#welcome',
+              redirectHash: '#checkout-address',
+              subtitle: 'Please sign in or create an account to proceed with your laptop order'
+            });
+          } else {
+            window.location.hash = '#checkout-address';
+          }
+        }
+      });
+    });
+
+    // Attach Wishlist toggle listeners
+    grid.querySelectorAll('.welcome-wishlist-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const pId = btn.dataset.id;
+        const prod = products.find(item => item.id === pId);
+        const added = state.toggleWishlist(pId);
+        api.toggleWishlist(pId).catch(() => {});
+        showToast(added ? `Added "${prod?.name || 'Laptop'}" to Wishlist! ❤️` : `Removed from Wishlist.`, 'info');
+        btn.innerHTML = added ? '❤️' : '🤍';
+        btn.title = added ? 'Remove from Wishlist' : 'Add to Wishlist';
+      });
+    });
+
+    // Refresh scroll reveals
+    trigger3DRefresh();
+
+  } catch (err) {
+    console.error('Error loading featured products:', err);
+    grid.innerHTML = `<p style="text-align: center; color: #ef4444; grid-column: 1/-1;">Could not load featured laptops.</p>`;
+  }
 }

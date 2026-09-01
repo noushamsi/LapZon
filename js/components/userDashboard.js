@@ -14,8 +14,9 @@ import { auth } from '../services/auth.js';
 import { state } from '../state.js';
 import { showToast } from '../app.js';
 import { openAuthModal } from './authModal.js';
+import { openReviewModal } from './reviewModal.js';
 
-export async function renderUserDashboard(container) {
+export async function renderUserDashboard(container, forcedTab = null) {
   const user = auth.getUser();
   if (!user || user.role === 'admin') {
     container.innerHTML = `
@@ -42,10 +43,19 @@ export async function renderUserDashboard(container) {
     return;
   }
 
-  // Parse active tab from URL query: e.g. #user-dashboard?tab=orders
+  // Parse active tab from forcedTab or URL query or hash: e.g. #wishlist or #user-dashboard?tab=wishlist
   const hash = window.location.hash || '';
   const urlParams = new URLSearchParams(hash.split('?')[1] || '');
-  const activeTab = urlParams.get('tab') || 'orders';
+  let activeTab = forcedTab || urlParams.get('tab');
+  if (!activeTab) {
+    if (hash.startsWith('#wishlist')) {
+      activeTab = 'wishlist';
+    } else if (hash.startsWith('#my-orders')) {
+      activeTab = 'orders';
+    } else {
+      activeTab = 'orders';
+    }
+  }
 
   // Load initial user data in parallel
   let orders = [];
@@ -65,21 +75,48 @@ export async function renderUserDashboard(container) {
       api.getUserReturns()
     ]);
 
+    const userEmail = (user.email || '').toLowerCase().trim();
+    const userId = user.id;
+
     if (ordersRes.status === 'fulfilled') {
       const allOrders = ordersRes.value?.orders || ordersRes.value || [];
       if (Array.isArray(allOrders) && allOrders.length > 0) {
-        orders = allOrders.filter(o => o.userId === user.id || o.customer?.email === user.email || o.customer?.userId === user.id || !o.userId);
+        orders = allOrders.filter(o => {
+          const orderEmail = (o.customer?.email || o.customerEmail || o.email || '').toLowerCase().trim();
+          const orderUserId = o.userId || o.customer?.userId;
+          return (userEmail && orderEmail === userEmail) || (userId && orderUserId === userId);
+        });
       }
     }
     
     // If API returned empty, check local state
     if (orders.length === 0) {
       const local = state.getOrders();
-      orders = local.filter(o => o.userId === user.id || o.customer?.email === user.email || o.customer?.userId === user.id || !o.userId);
+      orders = local.filter(o => {
+        const orderEmail = (o.customer?.email || o.customerEmail || o.email || '').toLowerCase().trim();
+        const orderUserId = o.userId || o.customer?.userId;
+        return (userEmail && orderEmail === userEmail) || (userId && orderUserId === userId);
+      });
     }
 
     if (addrRes.status === 'fulfilled') addresses = addrRes.value?.addresses || [];
-    if (wishRes.status === 'fulfilled') wishlist = wishRes.value || { products: [] };
+    
+    // Seamlessly merge and resolve local state and server wishlist items
+    const localWishIds = state.getWishlist() || [];
+    let serverProds = (wishRes.status === 'fulfilled' && Array.isArray(wishRes.value?.products)) ? wishRes.value.products : [];
+    const allProds = state.getProducts();
+    const mergedIds = Array.from(new Set([...localWishIds, ...serverProds.map(p => p.id)]));
+    const finalWishlistProducts = mergedIds.map(id => {
+      const foundInServer = serverProds.find(p => p.id === id);
+      if (foundInServer) return foundInServer;
+      return allProds.find(p => p.id === id);
+    }).filter(Boolean);
+
+    wishlist = {
+      itemIds: mergedIds,
+      products: finalWishlistProducts
+    };
+
     if (refRes.status === 'fulfilled') refData = refRes.value?.refInfo || refData;
     if (tickRes.status === 'fulfilled') tickets = tickRes.value?.tickets || [];
     if (retRes.status === 'fulfilled') returns = retRes.value?.returns || [];
@@ -94,59 +131,54 @@ export async function renderUserDashboard(container) {
     <div class="user-dashboard-wrapper" style="background: #f8fafc; min-height: 80vh; padding: 2rem 0 4rem;">
       <div class="container" style="max-width: 1200px;">
         
-        <!-- Continue Shopping Navigation -->
-        <div style="margin-bottom: 1.5rem;">
-          <a href="#store" class="btn btn-outline-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px; padding: 0.5rem 1.25rem; background: #ffffff; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-            ← Continue Shopping
-          </a>
+        <!-- Clean Page Back Navigation Button -->
+        <div class="page-back-nav-container">
+          <button type="button" class="btn-page-back" id="btn-dashboard-back" title="Back">
+            <span class="back-arrow-icon">←</span>
+            <span>Back</span>
+          </button>
         </div>
 
-        <!-- Dashboard Grid Layout -->
-        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 2rem; align-items: start;">
-          
-          <!-- Sidebar Navigation -->
-          <div style="background: #ffffff; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-            <nav style="display: flex; flex-direction: column; gap: 4px;">
-              <button type="button" class="dash-tab-btn ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'orders' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'orders' ? '#2874f0' : '#475569'};">
-                <span>📦 My Orders</span>
-                <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${orders.length}</span>
-              </button>
+        <!-- Top Horizontal Navigation Tabs Bar (Replacing Bulky Sidebar) -->
+        <div class="dash-tabs-bar" style="background: #ffffff; border-radius: 12px; padding: 0.6rem 0.75rem; border: 1.5px solid #e2e8f0; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.03); scrollbar-width: none;">
+          <button type="button" class="dash-tab-btn ${activeTab === 'orders' ? 'active' : ''}" data-tab="orders" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'orders' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'orders' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>📦 My Orders</span>
+            <span style="background: ${activeTab === 'orders' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${orders.length}</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'wishlist' ? 'active' : ''}" data-tab="wishlist" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'wishlist' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'wishlist' ? '#2874f0' : '#475569'};">
-                <span>💖 Saved Wishlist</span>
-                <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${wishlist.products?.length || 0}</span>
-              </button>
+          <button type="button" class="dash-tab-btn ${activeTab === 'wishlist' ? 'active' : ''}" data-tab="wishlist" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'wishlist' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'wishlist' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>💖 Saved Wishlist</span>
+            <span style="background: ${activeTab === 'wishlist' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${wishlist.products?.length || 0}</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'addresses' ? 'active' : ''}" data-tab="addresses" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'addresses' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'addresses' ? '#2874f0' : '#475569'};">
-                <span>📍 Saved Addresses</span>
-                <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${addresses.length}</span>
-              </button>
+          <button type="button" class="dash-tab-btn ${activeTab === 'addresses' ? 'active' : ''}" data-tab="addresses" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'addresses' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'addresses' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>📍 Saved Addresses</span>
+            <span style="background: ${activeTab === 'addresses' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${addresses.length}</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'referral' ? 'active' : ''}" data-tab="referral" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'referral' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'referral' ? '#2874f0' : '#475569'};">
-                <span>🎁 30% Referral Reward</span>
-                <span style="background: #fef08a; color: #854d0e; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">${refData.count || 0}/5</span>
-              </button>
+          <button type="button" class="dash-tab-btn ${activeTab === 'referral' ? 'active' : ''}" data-tab="referral" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'referral' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'referral' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>🎁 30% Referral Reward</span>
+            <span style="background: ${activeTab === 'referral' ? 'rgba(255,255,255,0.25)' : '#fef08a'}; color: ${activeTab === 'referral' ? '#ffffff' : '#854d0e'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;">${refData.count || 0}/5</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'returns' ? 'active' : ''}" data-tab="returns" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'returns' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'returns' ? '#2874f0' : '#475569'};">
-                <span>🔄 Returns & Exchanges</span>
-                <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${returns.length}</span>
-              </button>
+          <button type="button" class="dash-tab-btn ${activeTab === 'returns' ? 'active' : ''}" data-tab="returns" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'returns' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'returns' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>🔄 Returns & Exchanges</span>
+            <span style="background: ${activeTab === 'returns' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${returns.length}</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'support' ? 'active' : ''}" data-tab="support" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'support' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'support' ? '#2874f0' : '#475569'};">
-                <span>💬 Help & Support</span>
-                <span style="background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${tickets.length}</span>
-              </button>
+          <button type="button" class="dash-tab-btn ${activeTab === 'support' ? 'active' : ''}" data-tab="support" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'support' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'support' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            <span>💬 Support Tickets</span>
+            <span style="background: ${activeTab === 'support' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${tickets.length}</span>
+          </button>
 
-              <button type="button" class="dash-tab-btn ${activeTab === 'profile' ? 'active' : ''}" data-tab="profile" style="display: flex; align-items: center; gap: 8px; padding: 0.75rem 1rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: left; background: ${activeTab === 'profile' ? '#eff6ff' : 'transparent'}; color: ${activeTab === 'profile' ? '#2874f0' : '#475569'};">
-                👤 Profile Settings
-              </button>
-            </nav>
-          </div>
+          <button type="button" class="dash-tab-btn ${activeTab === 'profile' ? 'active' : ''}" data-tab="profile" style="display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.92rem; cursor: pointer; white-space: nowrap; background: ${activeTab === 'profile' ? '#ff6b00' : '#f8fafc'}; color: ${activeTab === 'profile' ? '#ffffff' : '#475569'}; transition: all 0.2s ease;">
+            👤 Profile Settings
+          </button>
+        </div>
 
-          <!-- Main Content Area -->
-          <div class="dash-tab-content" id="dash-main-tab-content">
-            ${renderActiveTabContent({ activeTab, orders, addresses, wishlist, refData, referralCode, referralLink, tickets, returns, user })}
-          </div>
+        <!-- Full-Width Main Content Area -->
+        <div class="dash-tab-content" id="dash-main-tab-content" style="width: 100%;">
+          ${renderActiveTabContent({ activeTab, orders, addresses, wishlist, refData, referralCode, referralLink, tickets, returns, user })}
         </div>
 
       </div>
@@ -376,7 +408,7 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
               Refer 5 Friends & Unlock a 30% OFF Coupon!
             </h3>
             <p style="color: #64748b; font-size: 0.9rem;">
-              Share LapKart Plus with friends and colleagues. Once 5 new users join through your referral link, you automatically receive a single-use 30% OFF discount coupon!
+              Share LapZon with friends and colleagues. Once 5 new users join through your referral link, you automatically receive a single-use 30% OFF discount coupon!
             </p>
           </div>
 
@@ -503,8 +535,8 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
                 </div>
                 <p style="font-size: 0.85rem; color: #475569; margin: 0 0 0.5rem;">${t.message}</p>
                 ${t.reply ? `
-                  <div style="background: #eff6ff; border-left: 3px solid #2874f0; padding: 0.6rem 0.85rem; border-radius: 0 8px 8px 0; font-size: 0.82rem; color: #1e40af; margin-top: 0.5rem;">
-                    <strong>LapKart Support Agent:</strong> ${t.reply}
+                  <div style="background: #fff7ed; border-left: 3px solid #ff6b00; padding: 0.6rem 0.85rem; border-radius: 0 8px 8px 0; font-size: 0.82rem; color: #9a3412; margin-top: 0.5rem;">
+                    <strong>LapZon Support Specialist:</strong> ${t.reply}
                   </div>
                 ` : '<div style="font-size: 0.78rem; color: #94a3b8;">Awaiting support representative response...</div>'}
               </div>
@@ -554,7 +586,13 @@ function attachUserDashboardEvents(container, context) {
   container.querySelectorAll('.dash-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.dataset.tab;
-      window.location.hash = `#user-dashboard?tab=${tab}`;
+      if (tab === 'wishlist') {
+        window.location.hash = '#wishlist';
+      } else if (tab === 'orders') {
+        window.location.hash = '#my-orders';
+      } else {
+        window.location.hash = `#user-dashboard?tab=${tab}`;
+      }
     });
   });
 
@@ -630,27 +668,16 @@ function attachUserDashboardEvents(container, context) {
 
   // Rate & Review button
   container.querySelectorAll('.btn-review-order').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
       const productId = btn.dataset.productId;
       const productName = btn.dataset.productName;
-      const ratingStr = prompt(`Rate "${productName}" (1 to 5 Stars):`, '5');
-      if (ratingStr) {
-        const rating = parseInt(ratingStr, 10);
-        const comment = prompt('Write your customer feedback/review:', 'Outstanding performance and fast delivery!');
-        if (comment) {
-          try {
-            const res = await api.submitReview({
-              productId,
-              rating,
-              title: 'Verified Buyer Feedback',
-              comment
-            });
-            showToast(res.message || 'Review submitted! Thank you.', 'success');
-          } catch (err) {
-            showToast(err.message || 'Failed to submit review.', 'error');
-          }
+      openReviewModal({
+        productId,
+        productName,
+        onSuccess: () => {
+          renderUserDashboard(container);
         }
-      }
+      });
     });
   });
 
@@ -669,7 +696,8 @@ function attachUserDashboardEvents(container, context) {
   container.querySelectorAll('.btn-wishlist-remove').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
-      await api.toggleWishlist(id);
+      state.toggleWishlist(id);
+      api.toggleWishlist(id).catch(() => {});
       showToast('Item removed from wishlist.', 'info');
       renderUserDashboard(container);
     });
@@ -678,37 +706,200 @@ function attachUserDashboardEvents(container, context) {
   // Address add & delete
   const showAddAddrBtn = document.getElementById('btn-show-add-address-modal') || document.getElementById('btn-empty-add-address');
   if (showAddAddrBtn) {
-    showAddAddrBtn.addEventListener('click', async () => {
-      const fullName = prompt('Full Name:');
-      if (!fullName) return;
-      const phone = prompt('10-Digit Mobile Number:');
-      if (!phone) return;
-      const houseNo = prompt('Flat / House / Building Number:');
-      if (!houseNo) return;
-      const street = prompt('Street / Area / Landmark:');
-      if (!street) return;
-      const city = prompt('City:');
-      if (!city) return;
-      const stateName = prompt('State:', 'Karnataka');
-      if (!stateName) return;
-      const pinCode = prompt('6-Digit PIN Code:');
-      if (!pinCode) return;
+    showAddAddrBtn.addEventListener('click', () => {
+      // Create and open Add Address Modal
+      const modalId = 'dash-add-address-modal';
+      let existingModal = document.getElementById(modalId);
+      if (existingModal) existingModal.remove();
 
-      try {
-        await api.addUserAddress({
-          fullName,
-          phone,
-          houseNo,
-          street,
-          city,
-          state: stateName,
-          pinCode,
-          addressType: 'Home'
+      const modalHtml = `
+        <div id="${modalId}" style="position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+          <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 520px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+            
+            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">📍 Add New Delivery Address</h3>
+              <button type="button" id="modal-close-addr-btn" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; padding: 4px 8px;">✕</button>
+            </div>
+
+            <div style="padding: 1.5rem; overflow-y: auto;">
+              <form id="modal-add-address-form" style="display: flex; flex-direction: column; gap: 0.85rem;">
+                <div>
+                  <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Full Name *</label>
+                  <input type="text" id="m-addr-name" required placeholder="e.g. Rahul Sharma" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Mobile Number (10 Digits) *</label>
+                  <input type="tel" id="m-addr-phone" maxlength="10" required placeholder="e.g. 9876543210" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                </div>
+
+                <!-- Current Location (Optional) - Clean Form Field with Inline Connect Button -->
+                <div>
+                  <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">
+                    <span>Current Location <span style="color: #64748b; font-weight: 500; font-size: 0.78rem;">(Optional)</span></span>
+                  </label>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="m-addr-location" placeholder="Enter current area or click 'Connect Location'" style="flex: 1; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                    <button type="button" class="btn btn-sm btn-outline" id="modal-btn-detect-loc" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.6rem 0.85rem; border: 1.5px solid #ff6b00; color: #ff6b00; font-weight: 700; border-radius: 8px; background: #fff; cursor: pointer; white-space: nowrap;">
+                      <span>📍</span>
+                      <span id="modal-loc-label">Connect Location</span>
+                    </button>
+                  </div>
+                  <div id="m-location-detected-summary" style="display: none; font-size: 0.78rem; color: #16a34a; font-weight: 600; margin-top: 4px;"></div>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Flat / House / Building Number *</label>
+                  <input type="text" id="m-addr-house" required placeholder="e.g. Flat 402, Lotus Residency" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Street / Area / Locality *</label>
+                  <input type="text" id="m-addr-street" required placeholder="e.g. 100 Feet Road, Indiranagar" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                  <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">City / District *</label>
+                    <input type="text" id="m-addr-city" required placeholder="e.g. Bengaluru" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                  </div>
+                  <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">PIN Code *</label>
+                    <input type="text" id="m-addr-pin" maxlength="6" required placeholder="e.g. 560038" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">State *</label>
+                  <select id="m-addr-state" required style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: #fff;">
+                    ${['Karnataka', 'Delhi NCR', 'Maharashtra', 'Tamil Nadu', 'Telangana', 'Andhra Pradesh', 'Gujarat', 'Uttar Pradesh', 'West Bengal', 'Kerala', 'Punjab', 'Rajasthan'].map(s => `<option value="${s}">${s}</option>`).join('')}
+                  </select>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                  <button type="button" id="modal-cancel-addr-btn" class="btn btn-outline" style="flex: 1; font-weight: 700;">Cancel</button>
+                  <button type="submit" class="btn btn-primary" style="flex: 2; font-weight: 800;">Save Delivery Address</button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const modalEl = document.getElementById(modalId);
+
+      const closeModal = () => {
+        if (modalEl) modalEl.remove();
+      };
+
+      document.getElementById('modal-close-addr-btn')?.addEventListener('click', closeModal);
+      document.getElementById('modal-cancel-addr-btn')?.addEventListener('click', closeModal);
+
+      // Geolocation in Modal
+      const locBtn = document.getElementById('modal-btn-detect-loc');
+      const locLbl = document.getElementById('modal-loc-label');
+      const mLocInput = document.getElementById('m-addr-location');
+      const mLocSummary = document.getElementById('m-location-detected-summary');
+
+      if (locBtn && locLbl) {
+        locBtn.addEventListener('click', () => {
+          if (!('geolocation' in navigator)) {
+            showToast('Geolocation is not supported by your browser.', 'info');
+            return;
+          }
+          locLbl.innerHTML = '⏳ Connecting...';
+          locBtn.disabled = true;
+
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              try {
+                const { latitude, longitude } = pos.coords;
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+                  headers: { 'Accept-Language': 'en' }
+                });
+                const geo = await res.json();
+                const addr = geo?.address || {};
+
+                const cityInput = document.getElementById('m-addr-city');
+                const pinInput = document.getElementById('m-addr-pin');
+                const streetInput = document.getElementById('m-addr-street');
+                const houseInput = document.getElementById('m-addr-house');
+                const stateSelect = document.getElementById('m-addr-state');
+
+                let dCity = addr.city || addr.town || addr.city_district || addr.county || '';
+                let dPin = addr.postcode ? addr.postcode.replace(/\D/g, '').substring(0, 6) : '';
+                let dRoad = addr.road || addr.suburb || addr.neighbourhood || '';
+                let dHouse = addr.house_number || addr.building || '';
+                let dState = addr.state || '';
+
+                const fullArea = [dRoad, dCity, dState, dPin].filter(Boolean).join(', ');
+                if (mLocInput) mLocInput.value = fullArea;
+                if (cityInput && dCity) cityInput.value = dCity;
+                if (pinInput && dPin && dPin.length === 6) pinInput.value = dPin;
+                if (streetInput && dRoad) streetInput.value = dRoad;
+                if (houseInput && dHouse) houseInput.value = dHouse;
+                if (stateSelect && dState) {
+                  const opts = Array.from(stateSelect.options);
+                  const match = opts.find(o => o.value.toLowerCase().includes(dState.toLowerCase()) || dState.toLowerCase().includes(o.value.toLowerCase()));
+                  if (match) stateSelect.value = match.value;
+                }
+
+                if (mLocSummary) {
+                  mLocSummary.style.display = 'block';
+                  mLocSummary.textContent = `✓ Connected to Location: ${fullArea}`;
+                }
+
+                showToast('📍 Current location connected!', 'success');
+              } catch (e) {
+                showToast('Location coordinates detected. You can complete address manually.', 'info');
+              } finally {
+                locLbl.innerHTML = 'Connect Location';
+                locBtn.disabled = false;
+              }
+            },
+            (err) => {
+              locLbl.innerHTML = 'Connect Location';
+              locBtn.disabled = false;
+              showToast('Location permission not provided. Please enter address manually below.', 'info');
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
         });
-        showToast('Address saved successfully!', 'success');
-        renderUserDashboard(container);
-      } catch (err) {
-        showToast(err.message || 'Failed to save address.', 'error');
+      }
+
+      // Submit Form
+      const formEl = document.getElementById('modal-add-address-form');
+      if (formEl) {
+        formEl.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fullName = document.getElementById('m-addr-name').value.trim();
+          const phone = document.getElementById('m-addr-phone').value.trim();
+          const houseNo = document.getElementById('m-addr-house').value.trim();
+          const street = document.getElementById('m-addr-street').value.trim();
+          const city = document.getElementById('m-addr-city').value.trim();
+          const stateVal = document.getElementById('m-addr-state').value;
+          const pinCode = document.getElementById('m-addr-pin').value.trim();
+
+          try {
+            await api.addUserAddress({
+              fullName,
+              phone,
+              houseNo,
+              street,
+              city,
+              state: stateVal,
+              pinCode,
+              addressType: 'Home'
+            });
+            showToast('Delivery address saved successfully! ✓', 'success');
+            closeModal();
+            renderUserDashboard(container);
+          } catch (err) {
+            showToast(err.message || 'Failed to save address.', 'error');
+          }
+        });
       }
     });
   }
@@ -743,6 +934,19 @@ function attachUserDashboardEvents(container, context) {
         renderUserDashboard(container);
       } catch (err) {
         showToast(err.message || 'Failed to update profile.', 'error');
+      }
+    });
+  }
+
+  // Back navigation button listener (respects history and falls back to store)
+  const backBtn = container.querySelector('#btn-dashboard-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = '#store';
       }
     });
   }

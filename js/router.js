@@ -7,6 +7,7 @@ import { renderWelcomePage } from './components/welcome.js';
 import { renderStorePage } from './components/store.js';
 import { renderProductDetails } from './components/productDetails.js';
 import { renderCheckoutAddress, renderCheckoutPayment, renderOrderConfirmed } from './components/checkout.js';
+import { renderCartPage } from './components/cart.js';
 import { renderOrderTracking } from './components/tracking.js';
 import { renderMyOrders } from './components/myOrders.js';
 import { renderUserDashboard } from './components/userDashboard.js';
@@ -16,15 +17,25 @@ import { renderLegalPage } from './components/legal.js';
 import { renderAdminDashboard } from './components/admin.js';
 import { renderAdminLogin } from './components/adminLogin.js';
 import { renderAccessDenied } from './components/accessDenied.js';
+import { handlePostAuthCompletion } from './components/authModal.js';
 
 class Router {
   constructor() {
     this.mainContainer = null;
+    this.previousRoute = '#welcome';
+    this.currentRoute = '#welcome';
   }
 
   init(container) {
     this.mainContainer = container;
-    window.addEventListener('hashchange', () => this.handleRoute());
+    this.currentRoute = window.location.hash || '#welcome';
+    window.addEventListener('hashchange', () => {
+      if (this.currentRoute !== window.location.hash) {
+        this.previousRoute = this.currentRoute;
+        this.currentRoute = window.location.hash || '#welcome';
+      }
+      this.handleRoute();
+    });
     this.handleRoute();
   }
 
@@ -35,7 +46,9 @@ class Router {
     const paramsObj = Object.fromEntries(queryParams.entries());
 
     // Scroll to top smoothly on route navigation
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // Track referral query param if present
     if (paramsObj.ref) {
@@ -57,6 +70,43 @@ class Router {
           }).catch(() => {});
         });
       }
+    }
+
+    // Google OAuth 2.0 / OpenID Connect Callback Handler
+    if (pathPart === 'google-callback' || pathPart === 'auth-callback') {
+      const token = paramsObj.token;
+      if (token) {
+        let user = null;
+        try {
+          if (paramsObj.user) {
+            user = JSON.parse(decodeURIComponent(paramsObj.user));
+          } else {
+            user = {
+              id: paramsObj.id || 'usr-google',
+              name: decodeURIComponent(paramsObj.name || 'Google User'),
+              email: decodeURIComponent(paramsObj.email || ''),
+              role: paramsObj.role || 'user'
+            };
+          }
+        } catch (e) {
+          user = { name: 'Google User', email: '', role: 'user' };
+        }
+        auth.setSession(token, user);
+        import('./app.js').then(({ showToast }) => {
+          showToast(`Welcome, ${user.name}! Successfully signed in via Google 🎉`, 'success');
+        });
+        handlePostAuthCompletion(user);
+        return;
+      }
+    }
+
+    if (pathPart === 'auth-error') {
+      const errorMsg = decodeURIComponent(paramsObj.message || 'Google authentication was cancelled or failed.');
+      import('./app.js').then(({ showToast }) => {
+        showToast(errorMsg, 'error');
+      });
+      window.location.hash = '#welcome';
+      return;
     }
 
     // Route matching with RBAC Guard
@@ -83,6 +133,8 @@ class Router {
       renderUserDashboard(this.mainContainer);
     } else if (pathPart === 'wishlist') {
       renderWishlist(this.mainContainer);
+    } else if (pathPart === 'cart') {
+      renderCartPage(this.mainContainer);
     } else if (pathPart === 'support') {
       renderSupportPage(this.mainContainer);
     } else if (pathPart.startsWith('legal/')) {
@@ -113,3 +165,13 @@ class Router {
 }
 
 export const router = new Router();
+
+export function getPreviousRoute(fallback = '#store') {
+  if (router && router.previousRoute && router.previousRoute !== router.currentRoute) {
+    if (router.previousRoute.includes('auth-') || router.previousRoute.includes('google-')) {
+      return fallback;
+    }
+    return router.previousRoute;
+  }
+  return fallback;
+}

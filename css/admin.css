@@ -11,13 +11,14 @@
 .admin-header-strip {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #fff;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   padding: 1.5rem 2rem;
   margin-bottom: 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2), 0 0 20px rgba(255, 107, 0, 0.15);
+  border: 1px solid rgba(255, 107, 0, 0.2);
 }
 
 .admin-header-title {
@@ -27,16 +28,17 @@
 }
 
 .admin-badge-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #ffe11b, #ff9f00);
-  color: #0f172a;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff7a00 0%, #ff5500 100%);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 900;
+  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.4);
 }
 
 .admin-header-title h2 {
@@ -67,30 +69,33 @@
 }
 
 .admin-tab-btn {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-  padding: 0.7rem 1.25rem;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.35rem;
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all var(--transition-fast);
+  gap: 0.6rem;
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
 }
 
 .admin-tab-btn:hover {
-  border-color: var(--primary-blue);
-  color: var(--primary-blue);
+  border-color: var(--primary-orange);
+  color: var(--primary-orange);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(255, 107, 0, 0.12);
 }
 
 .admin-tab-btn.active {
-  background-color: var(--primary-blue);
+  background: linear-gradient(135deg, #ff7a00 0%, #ff5500 100%);
   color: #fff;
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-sm);
+  border-color: #ff5500;
+  box-shadow: 0 6px 18px rgba(255, 107, 0, 0.35);
 }
 
 .admin-tab-btn .tab-count-badge {
@@ -108,7 +113,7 @@
 }
 
 /* ==========================================================================
-   KPI Analytics Overview Cards
+   KPI Analytics Overview Cards (Clean Modern Tiles)
    ========================================================================== */
 .admin-kpi-grid {
   display: grid;
@@ -118,20 +123,21 @@
 }
 
 .kpi-card {
-  background-color: var(--bg-surface);
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-subtle);
-  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+  padding: 1.35rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
 }
 
 .kpi-info {
@@ -659,11 +665,29 @@
   }
 }
 
+.table-responsive, .admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+}
+
+.table-responsive table {
+  min-width: 600px;
+}
+
 @media (max-width: 640px) {
   .admin-header-strip {
     flex-direction: column;
     text-align: center;
     gap: 1rem;
+    padding: 1.25rem 1rem;
+  }
+  .admin-header-title {
+    flex-direction: column;
+    text-align: center;
   }
   .admin-kpi-grid {
     grid-template-columns: 1fr;
@@ -671,4 +695,12 @@
   .preset-imgs-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .admin-tab-btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
 }
+

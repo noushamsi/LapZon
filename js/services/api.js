@@ -47,6 +47,9 @@ export const api = {
   // Auth & Profile
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (name, email, password) => request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
+  getGoogleConfig: () => request('/auth/google/config'),
+  verifyGoogleToken: (data) => request('/auth/google/verify-token', { method: 'POST', body: JSON.stringify(data) }),
+  googleLogin: (googleData) => request('/auth/google', { method: 'POST', body: JSON.stringify(googleData) }),
   getProfile: () => request('/auth/me'),
   updateProfile: (data) => request('/user/profile', { method: 'PUT', body: JSON.stringify(data) }),
   resetPassword: (email, newPassword) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, newPassword }) }),

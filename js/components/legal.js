@@ -1,21 +1,22 @@
 /**
- * Legal & Policy Pages Component
+ * Legal & Policy Pages Component - LapZon
+ * Tagline: "Quality Products, Trusted Service"
  * Covers About Us, Contact Us, Shipping Policy, Return & Refund Policy, Privacy Policy, Terms & Conditions, and Warranty Info.
  */
 
 export function renderLegalPage(container, pageKey = 'about') {
   const pages = {
     'about': {
-      title: 'About LapKart Plus',
-      subtitle: "India's Premier Dedicated Laptop E-Commerce Platform",
+      title: 'About LapZon',
+      subtitle: 'Quality Products, Trusted Service',
       icon: '💻',
       content: `
         <h3>Our Mission</h3>
         <p>
-          LapKart Plus was founded with a single, clear purpose: to make buying genuine, high-performance laptops transparent, reliable, and effortless across India. We focus exclusively on computing devices—ensuring deep technical expertise, curated selections from top global manufacturers, and seamless customer service.
+          LapZon was founded with a single, clear purpose: to make buying genuine, high-performance laptops transparent, reliable, and effortless across India. We focus exclusively on computing devices—ensuring deep technical expertise, curated selections from top global manufacturers, and seamless customer service.
         </p>
 
-        <h3>Why Choose LapKart Plus?</h3>
+        <h3>Why Choose LapZon?</h3>
         <ul>
           <li><strong>100% Genuine Brand Authorization:</strong> We source directly from official brand distributors for Apple, ASUS ROG, Dell XPS/Alienware, HP, Lenovo Legion, Acer Predator, MSI, and Samsung.</li>
           <li><strong>Doorstep Cash on Delivery:</strong> Zero advance stress. Pay with cash or UPI directly when your sealed laptop arrives at your doorstep.</li>
@@ -31,21 +32,21 @@ export function renderLegalPage(container, pageKey = 'about') {
       content: `
         <h3>Corporate & Fulfillment Office</h3>
         <p>
-          <strong>LapKart Plus Technologies Pvt. Ltd.</strong><br/>
+          <strong>LapZon Technologies Pvt. Ltd.</strong><br/>
           Level 4, Tech Park Towers, 100 Feet Road, Indiranagar<br/>
           Bengaluru, Karnataka - 560038, India
         </p>
 
-        <h3>Customer Support Helpline</h3>
+        <h3>Customer Support & Helpline</h3>
         <ul>
-          <li><strong>Toll-Free Support:</strong> 1800-419-7890 (Mon - Sun, 9:00 AM - 9:00 PM IST)</li>
-          <li><strong>Direct Email:</strong> support@lapkartplus.in</li>
-          <li><strong>Business & Vendor Partnerships:</strong> partners@lapkartplus.in</li>
+          <li><strong>Direct Phone Helpline:</strong> <a href="tel:8123019785" style="color: var(--primary-orange); font-weight: 700;">8123019785</a> (Mon - Sun, 9:00 AM - 9:00 PM IST)</li>
+          <li><strong>Official Enquiry Email:</strong> <a href="mailto:noushamsi09@gmail.com" style="color: var(--primary-orange); font-weight: 700;">noushamsi09@gmail.com</a></li>
+          <li><strong>Corporate Partnerships:</strong> partners@lapzon.in</li>
         </ul>
 
         <h3>Quick Support Ticket</h3>
         <p>
-          Need fast assistance regarding an active order or technical guidance? <a href="#support" style="color: #2874f0; font-weight: 700;">Submit a ticket in our Help Center ➔</a>
+          Need fast assistance regarding an active order or technical guidance? <a href="#support" style="color: var(--primary-orange); font-weight: 700;">Submit a ticket in our Help Center ➔</a>
         </p>
       `
     },
@@ -79,7 +80,7 @@ export function renderLegalPage(container, pageKey = 'about') {
       content: `
         <h3>7-Day Free Replacement Policy</h3>
         <p>
-          Every laptop purchased on LapKart Plus is eligible for free 7-day replacement from the date of doorstep delivery if:
+          Every laptop purchased on LapZon is eligible for free 7-day replacement from the date of doorstep delivery if:
         </p>
         <ul>
           <li>The laptop has a manufacturing hardware defect or display anomaly.</li>
@@ -103,7 +104,7 @@ export function renderLegalPage(container, pageKey = 'about') {
       content: `
         <h3>Information We Collect</h3>
         <p>
-          When you register, place an order, or browse LapKart Plus, we collect necessary contact and delivery information (Name, Email, Mobile Number, Shipping Address) strictly to fulfill your order and provide warranty tracking.
+          When you register, place an order, or browse LapZon, we collect necessary contact and delivery information (Name, Email, Mobile Number, Shipping Address) strictly to fulfill your order and provide warranty tracking.
         </p>
 
         <h3>Zero Data Sharing</h3>
@@ -119,7 +120,7 @@ export function renderLegalPage(container, pageKey = 'about') {
       content: `
         <h3>User Agreement</h3>
         <p>
-          By accessing or making a purchase on LapKart Plus, you agree to comply with our store policies, fair usage guidelines, and applicable consumer laws of the Republic of India.
+          By accessing or making a purchase on LapZon, you agree to comply with our store policies, fair usage guidelines, and applicable consumer laws of the Republic of India.
         </p>
 
         <h3>Pricing & Stock Availability</h3>
@@ -135,7 +136,7 @@ export function renderLegalPage(container, pageKey = 'about') {
       content: `
         <h3>1-Year Onsite Manufacturer Warranty</h3>
         <p>
-          All brand-new laptops sold on LapKart Plus carry a minimum of <strong>1 Year Official Brand Warranty</strong> directly honored by authorized service centers of Apple, ASUS, Dell, HP, Lenovo, and Acer across India.
+          All brand-new laptops sold on LapZon carry a minimum of <strong>1 Year Official Brand Warranty</strong> directly honored by authorized service centers of Apple, ASUS, Dell, HP, Lenovo, and Acer across India.
         </p>
 
         <h3>How to Claim Warranty</h3>
@@ -151,10 +152,18 @@ export function renderLegalPage(container, pageKey = 'about') {
   const page = pages[pageKey] || pages['about'];
 
   container.innerHTML = `
-    <div class="legal-page-wrapper" style="background: #f8fafc; min-height: 80vh; padding: 2.5rem 0 4rem;">
+    <div class="legal-page-wrapper fade-in-section" style="background: #f8fafc; min-height: 80vh; padding: 2rem 0 4rem;">
       <div class="container" style="max-width: 900px;">
         
-        <!-- Navigation Breadcrumbs / Tabs -->
+        <!-- Clean Page Back Navigation Button -->
+        <div class="page-back-nav-container">
+          <button type="button" class="btn-page-back" id="btn-legal-back" title="Back">
+            <span class="back-arrow-icon">←</span>
+            <span>Back</span>
+          </button>
+        </div>
+
+        <!-- Document Selection Tabs -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem;">
           ${Object.keys(pages).map(key => `
             <a href="#legal/${key}" class="btn btn-sm ${pageKey === key ? 'btn-primary' : 'btn-outline'}" style="font-weight: 700; border-radius: 20px; padding: 0.4rem 1rem;">
@@ -190,4 +199,17 @@ export function renderLegalPage(container, pageKey = 'about') {
       </div>
     </div>
   `;
+
+  // Back navigation button listener
+  const backBtn = container.querySelector('#btn-legal-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = '#welcome';
+      }
+    });
+  }
 }

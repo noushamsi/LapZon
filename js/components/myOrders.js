@@ -5,5 +5,5 @@
 import { renderUserDashboard } from './userDashboard.js';
 
 export async function renderMyOrders(container) {
-  return renderUserDashboard(container);
+  return renderUserDashboard(container, 'orders');
 }

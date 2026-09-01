@@ -7,7 +7,7 @@
 import { api } from '../services/api.js';
 import { auth } from '../services/auth.js';
 import { state } from '../state.js';
-import { showToast } from '../app.js';
+import { showToast, trigger3DRefresh } from '../app.js';
 import { getAppliedCoupon } from './cart.js';
 
 export async function renderCheckoutAddress(container) {
@@ -39,8 +39,16 @@ export async function renderCheckoutAddress(container) {
   }
 
   container.innerHTML = `
-    <div class="checkout-page">
+    <div class="checkout-page fade-in-section">
       <div class="container">
+        <!-- Clean Page Back Navigation Button -->
+        <div class="page-back-nav-container">
+          <button type="button" class="btn-page-back" id="btn-checkout-addr-back" title="Back">
+            <span class="back-arrow-icon">←</span>
+            <span>Back</span>
+          </button>
+        </div>
+
         <!-- Stepper -->
         <div class="checkout-stepper">
           <div class="step-node active">
@@ -105,8 +113,8 @@ export async function renderCheckoutAddress(container) {
 
                 <!-- Address Input Form -->
                 <div id="new-address-form-wrap" style="${!showNewForm && addresses.length > 0 ? 'display: none;' : 'display: block;'}">
-                  <h4 style="margin-bottom: 1.25rem; font-size: 1rem; color: var(--text-main); font-weight: 700;">
-                    Enter Complete Delivery Address
+                  <h4 style="margin: 0 0 1rem; font-size: 1.05rem; color: var(--text-main); font-weight: 800;">
+                    Complete Delivery Address
                   </h4>
                   
                   <form id="address-details-form" class="address-form-grid" novalidate>
@@ -122,6 +130,21 @@ export async function renderCheckoutAddress(container) {
                       <label for="addr-phone">Mobile Number (10 Digits) <span class="req">*</span></label>
                       <input type="tel" id="addr-phone" placeholder="e.g. 9876543210" maxlength="10" required />
                       <span class="form-error-msg" id="err-phone"></span>
+                    </div>
+
+                    <!-- Current Location (Optional) - Standard Form Field with Connect Button -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label for="addr-current-location" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Current Location <span class="opt-tag" style="color: #64748b; font-weight: 500; font-size: 0.8rem;">(Optional)</span></span>
+                      </label>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="addr-current-location" placeholder="Enter current area or click 'Connect Location'" style="flex: 1;" />
+                        <button type="button" class="btn btn-outline" id="btn-use-current-location" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.65rem 1rem; border: 1.5px solid #ff6b00; color: #ff6b00; font-weight: 700; border-radius: 8px; background: #fff; cursor: pointer; white-space: nowrap; transition: all 0.2s ease;">
+                          <span>📍</span>
+                          <span id="loc-btn-label">Connect Location</span>
+                        </button>
+                      </div>
+                      <span id="location-detected-summary" style="display: none; font-size: 0.8rem; color: #16a34a; font-weight: 600; margin-top: 4px;"></span>
                     </div>
 
                     <!-- Flat / House No -->
@@ -235,6 +258,18 @@ export async function renderCheckoutAddress(container) {
 }
 
 function attachAddressEvents(container) {
+  const backBtn = container.querySelector('#btn-checkout-addr-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = '#cart';
+      }
+    });
+  }
+
   const toggleNewBtn = container.querySelector('#btn-toggle-new-addr');
   const savedAddrsList = container.querySelector('#saved-addrs-list');
   const newFormWrap = container.querySelector('#new-address-form-wrap');
@@ -247,6 +282,86 @@ function attachAddressEvents(container) {
       newFormWrap.style.display = isHidden ? 'block' : 'none';
       savedAddrsList.style.display = isHidden ? 'none' : 'flex';
       toggleNewBtn.textContent = isHidden ? 'Use Saved Address' : '+ Add Different Address';
+    });
+  }
+
+  // Geolocation Location Detection (Optional)
+  const useLocationBtn = container.querySelector('#btn-use-current-location');
+  const locLabel = container.querySelector('#loc-btn-label');
+  const locInput = container.querySelector('#addr-current-location');
+  const locSummary = container.querySelector('#location-detected-summary');
+
+  if (useLocationBtn && locLabel) {
+    useLocationBtn.addEventListener('click', () => {
+      if (!('geolocation' in navigator)) {
+        showToast('Geolocation is not supported by your browser. Please enter address manually.', 'info');
+        return;
+      }
+
+      locLabel.innerHTML = '⏳ Connecting...';
+      useLocationBtn.disabled = true;
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+              headers: { 'Accept-Language': 'en' }
+            });
+            const geo = await res.json();
+            const addr = geo?.address || {};
+
+            const cityInput = container.querySelector('#addr-city');
+            const stateSelect = container.querySelector('#addr-state');
+            const pinInput = container.querySelector('#addr-pincode');
+            const streetInput = container.querySelector('#addr-street');
+            const houseInput = container.querySelector('#addr-house');
+
+            let detectedCity = addr.city || addr.town || addr.city_district || addr.county || addr.state_district || '';
+            let detectedPin = addr.postcode ? addr.postcode.replace(/\D/g, '').substring(0, 6) : '';
+            let detectedRoad = addr.road || addr.suburb || addr.neighbourhood || addr.residential || '';
+            let detectedHouse = addr.house_number || addr.building || '';
+            let detectedState = addr.state || '';
+
+            const fullLocString = [detectedRoad, detectedCity, detectedState, detectedPin].filter(Boolean).join(', ');
+            if (locInput) locInput.value = fullLocString;
+            if (cityInput && detectedCity) cityInput.value = detectedCity;
+            if (pinInput && detectedPin && detectedPin.length === 6) pinInput.value = detectedPin;
+            if (streetInput && detectedRoad) streetInput.value = detectedRoad;
+            if (houseInput && detectedHouse) houseInput.value = detectedHouse;
+
+            if (stateSelect && detectedState) {
+              const options = Array.from(stateSelect.options);
+              const matched = options.find(opt => 
+                opt.value.toLowerCase() === detectedState.toLowerCase() || 
+                detectedState.toLowerCase().includes(opt.value.toLowerCase()) || 
+                opt.value.toLowerCase().includes(detectedState.toLowerCase())
+              );
+              if (matched) stateSelect.value = matched.value;
+            }
+
+            if (locSummary) {
+              locSummary.style.display = 'block';
+              locSummary.textContent = `✓ Connected to GPS Area: ${fullLocString}`;
+            }
+
+            showToast('📍 Current location connected & fields populated!', 'success');
+          } catch (err) {
+            console.warn('Geolocation reverse geocoding fallback:', err);
+            showToast('Location connected. Please verify your address details.', 'info');
+          } finally {
+            locLabel.innerHTML = 'Connect Location';
+            useLocationBtn.disabled = false;
+          }
+        },
+        (err) => {
+          console.warn('Geolocation access status:', err);
+          locLabel.innerHTML = 'Connect Location';
+          useLocationBtn.disabled = false;
+          showToast('Location permission not granted. You can type your address manually.', 'info');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
     });
   }
 
@@ -413,8 +528,16 @@ export function renderCheckoutPayment(container) {
   }
 
   container.innerHTML = `
-    <div class="checkout-page">
+    <div class="checkout-page fade-in-section">
       <div class="container">
+        <!-- Clean Page Back Navigation Button -->
+        <div class="page-back-nav-container">
+          <button type="button" class="btn-page-back" id="btn-checkout-pay-back" title="Back">
+            <span class="back-arrow-icon">←</span>
+            <span>Back</span>
+          </button>
+        </div>
+
         <!-- Stepper -->
         <div class="checkout-stepper">
           <div class="step-node completed">
@@ -552,6 +675,18 @@ export function renderCheckoutPayment(container) {
 }
 
 function attachPaymentEvents(container, totals) {
+  const backBtn = container.querySelector('#btn-checkout-pay-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = '#checkout-address';
+      }
+    });
+  }
+
   const placeOrderBtn = container.querySelector('#btn-place-order-cod');
   if (!placeOrderBtn) return;
 
@@ -745,4 +880,6 @@ export async function renderOrderConfirmed(container, orderId) {
       </div>
     </div>
   `;
+
+  trigger3DRefresh();
 }

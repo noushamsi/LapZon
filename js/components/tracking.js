@@ -6,9 +6,20 @@
 
 import { api } from '../services/api.js';
 import { state } from '../state.js';
-import { showToast } from '../app.js';
+import { showToast, trigger3DRefresh } from '../app.js';
 
-const STAGES = ["Order Placed", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
+const STAGES = ["Confirmed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered"];
+
+function getStageIndex(status) {
+  if (!status || status === 'Waiting for Admin Confirmation' || status === 'Order Placed') return 0;
+  if (status === 'Order Confirmed' || status === 'Confirmed') return 0;
+  if (status === 'Processing' || status === 'Quality Checked') return 1;
+  if (status === 'Packed') return 2;
+  if (status === 'Shipped' || status === 'In Transit' || status === 'Dispatched') return 3;
+  if (status === 'Out for Delivery') return 4;
+  if (status === 'Delivered') return 5;
+  return 0;
+}
 
 export function renderOrderTracking(container, orderId) {
   let pollIntervalId = null;
@@ -55,8 +66,8 @@ export function renderOrderTracking(container, orderId) {
     }
 
     const isCancelled = order.status && order.status.startsWith('Cancelled');
-    const currentStageIndex = order.status === 'Waiting for Admin Confirmation' ? 0 : STAGES.indexOf(order.status);
-    const isDelivered = order.status === "Delivered";
+    const currentStageIndex = getStageIndex(order.status);
+    const isDelivered = order.status === "Delivered" || currentStageIndex === 5;
 
     const expectedDateObj = new Date(order.deliveryDetails?.expectedDate || Date.now());
     const dateFormatted = isNaN(expectedDateObj) 
@@ -71,28 +82,36 @@ export function renderOrderTracking(container, orderId) {
     const progressPercent = Math.min(100, Math.max(0, (currentStageIndex / (STAGES.length - 1)) * 100));
 
     container.innerHTML = `
-      <div class="tracking-page">
+      <div class="tracking-page fade-in-section">
         <div class="container">
-          <!-- Top Header Info with Live Sync Indicator -->
+          <!-- Clean Page Back Navigation Button -->
+          <div class="page-back-nav-container">
+            <button type="button" class="btn-page-back" id="btn-tracking-back" title="Back to previous page">
+              <span class="back-arrow-icon">←</span>
+              <span>Back</span>
+            </button>
+          </div>
+
+          <!-- Top Header Info Card -->
           <div class="tracking-header-card">
             <div class="tracking-id-text">
               <h3>📦 Order Tracking: <span>${order.orderId}</span></h3>
-              <p>Placed on ${formatTime(order.createdAt)} • Mode: ${order.paymentMethod}</p>
+              <p>Placed on ${formatTime(order.createdAt)} • Payment: <strong>${order.paymentMethod}</strong></p>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <span class="badge" style="background: rgba(34, 197, 94, 0.1); color: #16a34a; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
-                <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a; display: inline-block; animation: pulseDot 1.5s infinite;"></span>
-                Live Connected
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <span class="badge" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 999px; padding: 0.35rem 0.75rem;">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+                Live GPS Sync Active
               </span>
-              <span class="badge ${isDelivered ? 'badge-in-stock' : 'badge-tag'}" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">
-                ● Current Status: <strong>${order.status}</strong>
+              <span class="badge ${isDelivered ? 'badge-in-stock' : 'badge-tag'}" style="font-size: 0.92rem; padding: 0.45rem 0.95rem; border-radius: 8px; font-weight: 800;">
+                ● ${order.status}
               </span>
             </div>
           </div>
 
           <!-- CANCELLATION / DELIVERED / LIVE LOGISTICS BANNER -->
           ${isCancelled ? `
-            <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: var(--radius-xs); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
+            <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1.25rem;">
               <div style="font-size: 2.5rem; color: #dc2626;">✕</div>
               <div>
                 <h3 style="color: #991b1b; font-weight: 800; font-size: 1.2rem;">Order Cancelled (${order.status})</h3>
@@ -105,7 +124,7 @@ export function renderOrderTracking(container, orderId) {
                 <div class="delivered-icon-circle">✓</div>
                 <div>
                   <h3>🎉 Delivered Successfully</h3>
-                  <p>Your laptop was delivered on <strong>${deliveredDateFormatted}</strong>. Handed over to recipient with OTP verification.</p>
+                  <p>Your laptop was delivered on <strong>${deliveredDateFormatted}</strong>. Handed over with OTP verification.</p>
                 </div>
               </div>
               <div>
@@ -115,24 +134,24 @@ export function renderOrderTracking(container, orderId) {
               </div>
             </div>
           ` : `
-            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); padding: 1.25rem 1.75rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: var(--shadow-sm);">
+            <div class="courier-live-info-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: var(--shadow-sm); padding: 1.35rem 1.75rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
               <div>
-                <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Courier Partner & Tracking:</span>
-                <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-top: 2px;">
-                  🚀 ${order.deliveryDetails?.courierPartner || 'Ekart Logistics'} (AWB: ${order.deliveryDetails?.trackingNumber || 'EK-EXP-9102834'})
+                <span style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">Courier Partner & Live Status</span>
+                <div style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-top: 3px;">
+                  🚀 ${order.deliveryDetails?.courierPartner || 'LapZon Express Logistics'} <span style="color: var(--primary-orange); font-size: 0.88rem;">(AWB: ${order.deliveryDetails?.trackingNumber || 'LZ-EXP-9102834'})</span>
                 </div>
                 ${order.deliveryDetails?.deliveryPersonName ? `
-                  <div style="font-size: 0.85rem; color: var(--text-main); margin-top: 3px;">
-                    🛵 Courier Agent: <strong>${order.deliveryDetails.deliveryPersonName}</strong> ${order.deliveryDetails.deliveryPersonPhone ? `• 📞 <a href="tel:${order.deliveryDetails.deliveryPersonPhone}" style="color: var(--primary-blue); font-weight: 700;">${order.deliveryDetails.deliveryPersonPhone}</a>` : ''}
+                  <div style="font-size: 0.85rem; color: var(--text-main); margin-top: 4px;">
+                    🛵 Courier Agent: <strong>${order.deliveryDetails.deliveryPersonName}</strong> ${order.deliveryDetails.deliveryPersonPhone ? `• 📞 <a href="tel:${order.deliveryDetails.deliveryPersonPhone}" style="color: var(--primary-orange); font-weight: 700;">${order.deliveryDetails.deliveryPersonPhone}</a>` : ''}
                   </div>
                 ` : ''}
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 3px;">
-                  Current Location: <strong style="color: var(--primary-blue);">${order.deliveryDetails?.currentLocation || 'Distribution Facility'}</strong>
+                <div style="font-size: 0.86rem; color: var(--text-secondary); margin-top: 4px;">
+                  Current Hub: <strong style="color: var(--primary-orange);">${order.deliveryDetails?.currentLocation || 'Bengaluru Distribution Center'}</strong>
                 </div>
               </div>
               <div style="text-align: right;">
-                <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Estimated Delivery:</span>
-                <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-emerald);">
+                <span style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">Estimated Delivery</span>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #16a34a;">
                   ${dateFormatted}
                 </div>
               </div>
@@ -141,11 +160,12 @@ export function renderOrderTracking(container, orderId) {
 
           <!-- 6-Stage Progress Stepper Card -->
           <div class="timeline-card">
-            <h4 style="font-size: 1rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 2rem;">
-              Delivery Progress Timeline
+            <h4 style="font-size: 1rem; font-weight: 800; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px; margin-bottom: 2.2rem; display: flex; align-items: center; gap: 8px;">
+              <span>⚡ Live Delivery Progress</span>
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-left: auto;">(Step ${currentStageIndex + 1} of 6)</span>
             </h4>
 
-            <!-- Horizontal Stepper -->
+            <!-- Horizontal 3D Stepper -->
             <div class="timeline-horizontal-stepper">
               <div class="timeline-h-line">
                 <div class="timeline-h-progress-fill" style="width: ${progressPercent}%;"></div>
@@ -157,11 +177,11 @@ export function renderOrderTracking(container, orderId) {
 
                 let icon = '○';
                 if (isCompleted) icon = '✓';
-                if (isActive) icon = '●';
+                if (isActive) icon = '🚀';
 
                 return `
                   <div class="timeline-h-step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}">
-                    <div class="timeline-h-node">${icon}</div>
+                    <div class="timeline-h-node ${isActive ? 'pulse-node' : ''}">${icon}</div>
                     <span class="timeline-h-label">${stageName}</span>
                   </div>
                 `;
@@ -169,8 +189,8 @@ export function renderOrderTracking(container, orderId) {
             </div>
 
             <!-- Detailed Vertical Checkpoint Log -->
-            <div class="checkpoints-log-wrap">
-              <h4>Activity & Location Checkpoint Log</h4>
+            <div class="checkpoints-log-wrap" style="margin-top: 2.5rem;">
+              <h4 style="font-weight: 800; font-size: 0.95rem; color: var(--text-main); margin-bottom: 1.2rem;">Activity & Location Checkpoint Log</h4>
               <div class="checkpoint-vertical-list">
                 ${(order.timeline || []).map((item, idx) => {
                   const isCompleted = item.completed || (idx <= currentStageIndex);
@@ -181,7 +201,7 @@ export function renderOrderTracking(container, orderId) {
                       <div class="checkpoint-dot"></div>
                       <div class="checkpoint-stage-name">
                         <span>${item.stage}</span>
-                        ${isCompleted ? `<span style="color: var(--accent-emerald); font-size: 0.8rem;">✓ Verified</span>` : ''}
+                        ${isCompleted ? `<span style="color: #16a34a; font-size: 0.8rem; font-weight: 700;">✓ Verified</span>` : ''}
                       </div>
                       ${item.timestamp ? `
                         <div class="checkpoint-timestamp">📅 ${formatTime(item.timestamp)}</div>
@@ -195,8 +215,9 @@ export function renderOrderTracking(container, orderId) {
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Complete Order Summary Section -->
+        <!-- Complete Order Summary Section -->
           <div class="order-details-grid">
             <!-- Items Purchased -->
             <div class="order-info-card">
@@ -266,6 +287,19 @@ export function renderOrderTracking(container, orderId) {
         </div>
       </div>
     `;
+
+    // Attach back navigation button event
+    const backBtn = container.querySelector('#btn-tracking-back');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.hash = '#my-orders';
+        }
+      });
+    }
 
     // Attach invoice download event
     const invoiceBtn = container.querySelector('#btn-download-invoice');

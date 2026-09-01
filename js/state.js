@@ -195,7 +195,7 @@ class StateStore {
     this.notify('cart', cart);
   }
 
-  addToCart(productId, quantity = 1, productObj = null) {
+  addToCart(productId, quantity = 1, productObj = null, replaceQuantity = false) {
     let product = productObj || this.getProductById(productId);
     if (!product) {
       const allProds = this.getProducts();
@@ -208,6 +208,9 @@ class StateStore {
       return { success: false, message: "Product is currently out of stock!" };
     }
 
+    const maxStock = (product.stock !== undefined && Number(product.stock) > 0) ? Number(product.stock) : 10;
+    const qtyToAdd = Math.max(1, Math.min(Number(quantity) || 1, maxStock));
+
     const defaultImg = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80';
     const prodImg = (product.image && product.image.trim()) ? product.image : defaultImg;
 
@@ -215,7 +218,11 @@ class StateStore {
     const existingIndex = cart.findIndex(item => item.id === productId);
 
     if (existingIndex !== -1) {
-      cart[existingIndex].quantity += quantity;
+      if (replaceQuantity) {
+        cart[existingIndex].quantity = qtyToAdd;
+      } else {
+        cart[existingIndex].quantity = Math.min(cart[existingIndex].quantity + qtyToAdd, maxStock);
+      }
     } else {
       cart.push({
         id: product.id,
@@ -226,12 +233,12 @@ class StateStore {
         mrp: Number(product.mrp || product.price),
         discount: Number(product.discount || 0),
         specsSummary: `${product.processor || ''} | ${product.ram || ''} | ${product.storage || ''}`,
-        quantity
+        quantity: qtyToAdd
       });
     }
 
     this.setCart(cart);
-    return { success: true, message: `"${product.name}" added to cart!` };
+    return { success: true, message: `Added ${qtyToAdd} × "${product.name}" to cart!` };
   }
 
   updateCartQuantity(productId, delta) {
@@ -279,18 +286,35 @@ class StateStore {
     };
   }
 
-  // --- WISHLIST ---
+  // --- WISHLIST (Scoped per authenticated customer account) ---
+  _getWishlistKey() {
+    try {
+      const custUserRaw = safeStorage.getItem('lapkart_customer_user_v4');
+      if (custUserRaw) {
+        const u = JSON.parse(custUserRaw);
+        if (u && u.email) {
+          return `lapkart_wishlist_${u.email.toLowerCase().trim()}`;
+        }
+      }
+    } catch {}
+    return STORAGE_KEYS.WISHLIST;
+  }
+
   getWishlist() {
     try {
-      return JSON.parse(safeStorage.getItem(STORAGE_KEYS.WISHLIST)) || [];
+      const key = this._getWishlistKey();
+      const raw = safeStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+      return [];
     } catch {
       return [];
     }
   }
 
   setWishlist(wishlist) {
-    safeStorage.setItem(STORAGE_KEYS.WISHLIST, JSON.stringify(wishlist));
-    this.notify('wishlist', wishlist);
+    const key = this._getWishlistKey();
+    safeStorage.setItem(key, JSON.stringify(wishlist || []));
+    this.notify('wishlist', wishlist || []);
   }
 
   toggleWishlist(productId) {

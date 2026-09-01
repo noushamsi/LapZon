@@ -121,15 +121,23 @@ export async function renderAdminDashboard(container, queryParams = {}) {
     const draftProducts = products.filter(p => p.status === 'pending');
 
     container.innerHTML = `
-      <div class="admin-portal">
+      <div class="admin-portal fade-in-section">
         <div class="container">
+          <!-- Clean Page Back Navigation Button -->
+          <div class="page-back-nav-container">
+            <button type="button" class="btn-page-back" id="btn-admin-back" title="Back to Store">
+              <span class="back-arrow-icon">←</span>
+              <span>Back to Store</span>
+            </button>
+          </div>
+
           <!-- Top Header Strip -->
           <div class="admin-header-strip">
             <div class="admin-header-title">
-              <div class="admin-badge-icon">👑</div>
+              <img src="assets/images/lapzon-logo.png" style="width: 48px; height: 48px; border-radius: 8px; border: 1.5px solid #ff6b00; object-fit: cover;" alt="LapZon Admin" />
               <div>
-                <h2>LapKart Owner & Admin Center</h2>
-                <p>Manage product catalog, approve submissions, dispatch orders & control live stock</p>
+                <h2>LapZon Owner & Admin Center</h2>
+                <p>Quality Products, Trusted Service • Product approvals, live order dispatch & inventory control</p>
               </div>
             </div>
             <div class="admin-header-actions">
@@ -1028,6 +1036,15 @@ export async function renderAdminDashboard(container, queryParams = {}) {
     });
 
     attachGallerySlotEvents();
+
+    // Back to Store navigation
+    const backBtn = container.querySelector('#btn-admin-back');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.hash = '#store';
+      });
+    }
 
     // Reset Demo Data
     const resetDemoBtn = container.querySelector('#btn-reset-demo');

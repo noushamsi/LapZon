@@ -8,17 +8,18 @@
 import { api } from '../services/api.js';
 import { state } from '../state.js';
 import { auth } from '../services/auth.js';
-import { showToast } from '../app.js';
+import { showToast, trigger3DRefresh } from '../app.js';
 import { openAuthModal } from './authModal.js';
+import { openReviewModal } from './reviewModal.js';
+
+function formatPrice(val) {
+  return '₹' + Number(val || 0).toLocaleString('en-IN');
+}
 
 export async function renderProductDetails(container, productId) {
   let product = null;
   let dynamicReviews = [];
   let allProducts = [];
-
-  function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
-  }
 
   try {
     const [prodRes, revRes, allProdRes] = await Promise.allSettled([
@@ -78,6 +79,7 @@ export async function renderProductDetails(container, productId) {
   const images = rawImages.map(img => (img && img.trim()) ? img : defaultImg);
   let activeImage = images[0];
   const isInStock = product.inStock !== false && (product.stock === undefined || Number(product.stock) > 0);
+  const isWishlisted = state.getWishlist().includes(product.id);
 
   // User Referral Code
   const user = auth.getUser();
@@ -87,16 +89,13 @@ export async function renderProductDetails(container, productId) {
     <div class="product-details-page">
       <div class="container">
         
-        <!-- Breadcrumb Navigation -->
-        <nav class="breadcrumb-nav" aria-label="breadcrumb">
-          <a href="#welcome">Home</a>
-          <span class="bc-sep">›</span>
-          <a href="#store">Laptops</a>
-          <span class="bc-sep">›</span>
-          <a href="#store?cat=${encodeURIComponent(product.category || 'Ultrabook')}">${product.category || 'Ultrabook'}</a>
-          <span class="bc-sep">›</span>
-          <span class="bc-current">${product.brand}</span>
-        </nav>
+        <!-- Clean Page Back Navigation Button -->
+        <div class="page-back-nav-container">
+          <button type="button" class="btn-page-back" id="btn-pdp-back" title="Back to previous page">
+            <span class="back-arrow-icon">←</span>
+            <span>Back</span>
+          </button>
+        </div>
 
         <div class="pdp-layout-grid">
           
@@ -135,6 +134,9 @@ export async function renderProductDetails(container, productId) {
                     ✕ CURRENTLY OUT OF STOCK
                   </button>
                 `}
+                <button type="button" class="btn btn-outline btn-lg pdp-btn-wishlist ${isWishlisted ? 'active' : ''}" id="pdp-btn-wishlist" style="font-weight: 700; ${isWishlisted ? 'background: #fff1f2; border-color: #f43f5e; color: #e11d48;' : ''}">
+                  ${isWishlisted ? '❤️ SAVED TO WISHLIST' : '🤍 ADD TO WISHLIST'}
+                </button>
                 <button type="button" class="btn btn-outline btn-lg" id="pdp-btn-share" style="border-color: #3b82f6; color: #2563eb; font-weight: 700;">
                   🔗 SHARE & EARN 30% OFF
                 </button>
@@ -200,12 +202,45 @@ export async function renderProductDetails(container, productId) {
             <!-- Pricing Section -->
             <div class="pdp-price-card">
               <div class="pdp-price-main">
-                <span class="pdp-current-price">${formatPrice(product.price)}</span>
+                <span class="pdp-current-price" id="pdp-unit-price-display">${formatPrice(product.price)}</span>
                 <span class="pdp-mrp-price">${formatPrice(product.mrp || product.price)}</span>
                 <span class="pdp-discount-badge">${product.discount || 0}% off</span>
               </div>
               <div class="pdp-inclusive-tax">+ ₹0 Packaging Fee • Cash on Delivery Available</div>
             </div>
+
+            <!-- Quantity Selector & Real-Time Total Amount Calculation -->
+            ${isInStock ? `
+              <div class="pdp-quantity-calculator-box" style="background: linear-gradient(135deg, #ffffff 0%, #fffbf5 100%); border: 1.5px solid #fed7aa; border-radius: 12px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; box-shadow: 0 4px 15px rgba(255, 107, 0, 0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem;">
+                  <div>
+                    <label style="font-size: 0.85rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 0.5rem;">
+                      Select Quantity:
+                    </label>
+                    <div style="display: inline-flex; align-items: center; border: 2px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                      <button type="button" id="pdp-qty-minus" aria-label="Decrease quantity" style="width: 42px; height: 42px; border: none; background: #f8fafc; font-size: 1.3rem; font-weight: 800; color: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease;">−</button>
+                      <span id="pdp-qty-display" style="min-width: 48px; text-align: center; font-size: 1.15rem; font-weight: 900; color: #0f172a; padding: 0 6px;">1</span>
+                      <button type="button" id="pdp-qty-plus" aria-label="Increase quantity" style="width: 42px; height: 42px; border: none; background: #f8fafc; font-size: 1.3rem; font-weight: 800; color: #0f172a; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease;">+</button>
+                    </div>
+                  </div>
+
+                  <!-- Real-Time Total Amount Display -->
+                  <div style="text-align: right;">
+                    <span style="font-size: 0.82rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">
+                      Total Amount:
+                    </span>
+                    <div id="pdp-calc-total-price" style="font-size: 1.75rem; font-weight: 900; color: #ff6b00; line-height: 1.1;">
+                      ${formatPrice(product.price)}
+                    </div>
+                    <div id="pdp-price-calc-summary" style="font-size: 0.85rem; color: #475569; font-weight: 700; margin-top: 4px;">
+                      (${formatPrice(product.price)} × 1 unit)
+                    </div>
+                  </div>
+                </div>
+
+                ${product.stock ? `<div id="pdp-stock-limit-note" style="font-size: 0.78rem; color: #dc2626; font-weight: 700; margin-top: 0.6rem; display: none;">⚠️ Max available stock reached (${product.stock} units).</div>` : ''}
+              </div>
+            ` : ''}
 
             <!-- Stock Status Pill -->
             <div class="pdp-stock-status-wrap">
@@ -428,7 +463,7 @@ export async function renderProductDetails(container, productId) {
           </div>
           <h4 style="font-size: 1.1rem; font-weight: 700; color: #166534;">Unlock Flat 30% OFF Coupon</h4>
           <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;">
-            Share this laptop with 5 friends. When they visit and register on LapKart Plus, you receive an exclusive <strong>30% OFF Coupon</strong> for your next laptop order!
+            Share this laptop with 5 friends. When they visit and register on LapZon, you receive an exclusive <strong>30% OFF Coupon</strong> for your next laptop order!
           </p>
         </div>
 
@@ -453,6 +488,20 @@ export async function renderProductDetails(container, productId) {
 }
 
 function attachProductDetailsEvents(container, product, images, userRefCode) {
+  if (!container || typeof container.querySelector !== 'function') return;
+  // 0. Back Navigation Button Handler
+  const backBtn = container.querySelector('#btn-pdp-back');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = '#store';
+      }
+    });
+  }
+
   // 1. Thumbnail image switcher
   container.querySelectorAll('.pdp-thumb-item').forEach(thumb => {
     thumb.addEventListener('click', () => {
@@ -466,26 +515,89 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     });
   });
 
-  // 2. Add to Cart Button (passes product object directly to avoid any out-of-stock sync lag)
+  // --- QUANTITY SELECTOR & REAL-TIME PRICE CALCULATION LOGIC ---
+  let currentQty = 1;
+  const maxStock = (product.stock !== undefined && Number(product.stock) > 0) ? Number(product.stock) : 10;
+  const unitPrice = Number(product.price);
+
+  function updateQtyDisplay() {
+    const qtyDisplay = container.querySelector('#pdp-qty-display');
+    const calcTotal = container.querySelector('#pdp-calc-total-price');
+    const summaryEl = container.querySelector('#pdp-price-calc-summary');
+    const stockLimitNote = container.querySelector('#pdp-stock-limit-note');
+    const minusBtn = container.querySelector('#pdp-qty-minus');
+    const plusBtn = container.querySelector('#pdp-qty-plus');
+
+    if (qtyDisplay) qtyDisplay.textContent = currentQty;
+    
+    const totalPrice = unitPrice * currentQty;
+    if (calcTotal) calcTotal.textContent = formatPrice(totalPrice);
+
+    if (summaryEl) {
+      summaryEl.textContent = `(${formatPrice(unitPrice)} × ${currentQty} ${currentQty === 1 ? 'unit' : 'units'})`;
+    }
+
+    if (minusBtn) {
+      minusBtn.style.opacity = currentQty <= 1 ? '0.35' : '1';
+      minusBtn.style.cursor = currentQty <= 1 ? 'not-allowed' : 'pointer';
+    }
+    if (plusBtn) {
+      plusBtn.style.opacity = currentQty >= maxStock ? '0.35' : '1';
+      plusBtn.style.cursor = currentQty >= maxStock ? 'not-allowed' : 'pointer';
+    }
+    if (stockLimitNote) {
+      stockLimitNote.style.display = currentQty >= maxStock ? 'block' : 'none';
+    }
+  }
+
+  const minusBtn = container.querySelector('#pdp-qty-minus');
+  if (minusBtn) {
+    minusBtn.addEventListener('click', () => {
+      if (currentQty > 1) {
+        currentQty--;
+        updateQtyDisplay();
+      }
+    });
+  }
+
+  const plusBtn = container.querySelector('#pdp-qty-plus');
+  if (plusBtn) {
+    plusBtn.addEventListener('click', () => {
+      if (currentQty < maxStock) {
+        currentQty++;
+        updateQtyDisplay();
+      } else {
+        showToast(`Maximum available stock is ${maxStock} units.`, 'warning');
+      }
+    });
+  }
+
+  // 2. Add to Cart Button (respects selected quantity)
   const addCartBtn = container.querySelector('#pdp-btn-add-cart');
   if (addCartBtn) {
     addCartBtn.addEventListener('click', () => {
-      const res = state.addToCart(product.id, 1, product);
+      const res = state.addToCart(product.id, currentQty, product, false);
       if (res.success) {
-        showToast(`Added "${product.name}" to Cart! 🛒`, 'success');
+        const totalCalc = unitPrice * currentQty;
+        showToast(`Added ${currentQty} × "${product.name}" to Cart (${formatPrice(totalCalc)})! 🛒`, 'success');
       } else {
         showToast(res.message, 'warning');
       }
     });
   }
 
-  // 3. Buy Now Button (Direct checkout flow with authentication guard)
+  // 3. Buy Now Button (Direct checkout flow with quantity preservation)
   const buyNowBtn = container.querySelector('#pdp-btn-buy-now');
   if (buyNowBtn) {
     buyNowBtn.addEventListener('click', () => {
-      state.addToCart(product.id, 1, product);
+      state.addToCart(product.id, currentQty, product, true);
       if (!auth.isAuthenticated()) {
         openAuthModal('login', {
+          action: 'buy_now',
+          productId: product.id,
+          quantity: currentQty,
+          productData: product,
+          returnHash: `#product/${product.id}`,
           redirectHash: '#checkout-address',
           subtitle: 'Please sign in or create an account to proceed with your laptop order'
         });
@@ -495,30 +607,38 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     });
   }
 
+  // 3.5 Wishlist Button (Preserves page and handles auth prompt if unauthenticated)
+  const wishBtn = container.querySelector('#pdp-btn-wishlist');
+  if (wishBtn) {
+    wishBtn.addEventListener('click', () => {
+      if (!auth.isAuthenticated()) {
+        openAuthModal('login', {
+          action: 'wishlist',
+          productId: product.id,
+          productData: product,
+          returnHash: `#product/${product.id}`,
+          subtitle: 'Please sign in to save this laptop to your Wishlist'
+        });
+      } else {
+        const added = state.toggleWishlist(product.id);
+        api.toggleWishlist(product.id).catch(() => {});
+        showToast(added ? `Added "${product.name}" to Wishlist! ❤️` : `Removed from Wishlist.`, 'info');
+        renderProductDetails(container, product.id);
+      }
+    });
+  }
+
   // 4. Write Review Button
   const writeRevBtn = container.querySelector('#btn-pdp-write-review');
   if (writeRevBtn) {
-    writeRevBtn.addEventListener('click', async () => {
-      const ratingStr = prompt(`Rate "${product.name}" (1 to 5 Stars):`, '5');
-      if (!ratingStr) return;
-      const rating = parseInt(ratingStr, 10);
-      const title = prompt('Review Title:', 'Great build quality & fast delivery');
-      if (!title) return;
-      const comment = prompt('Your Review Comments:');
-      if (!comment) return;
-
-      try {
-        const res = await api.submitReview({
-          productId: product.id,
-          rating,
-          title,
-          comment
-        });
-        showToast(res.message || 'Review submitted! Thank you.', 'success');
-        renderProductDetails(container, product.id);
-      } catch (err) {
-        showToast(err.message || 'Failed to submit review.', 'error');
-      }
+    writeRevBtn.addEventListener('click', () => {
+      openReviewModal({
+        productId: product.id,
+        productName: product.name,
+        onSuccess: () => {
+          renderProductDetails(container, product.id);
+        }
+      });
     });
   }
 
@@ -561,8 +681,8 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
       if (navigator.share) {
         try {
           await navigator.share({
-            title: `${product.name} on LapKart Plus`,
-            text: `Check out the ${product.name} on LapKart Plus laptop store! Join via my link:`,
+            title: `${product.name} on LapZon`,
+            text: `Check out the ${product.name} on LapZon - Quality Products, Trusted Service! Join via my link:`,
             url: shareUrl
           });
           showToast('Shared successfully!', 'success');
@@ -585,4 +705,6 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
       }
     });
   });
+
+  trigger3DRefresh();
 }

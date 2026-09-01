@@ -131,7 +131,7 @@ export async function renderStorePage(container, queryParams = {}) {
         <div class="container" style="padding: 5rem 1rem; text-align: center;">
           <div style="font-size: 3rem; margin-bottom: 1rem;">💻⏳</div>
           <h3>Loading Laptop Catalog...</h3>
-          <p style="color: var(--text-muted);">Fetching latest verified stock from LapKart database.</p>
+          <p style="color: var(--text-muted);">Fetching latest verified stock from LapZon database.</p>
         </div>
       `;
       return;
@@ -340,7 +340,7 @@ export async function renderStorePage(container, queryParams = {}) {
                     const isInStock = product.inStock && product.stock > 0;
 
                     return `
-                      <div class="product-row-card" data-id="${product.id}">
+                      <div class="product-row-card hover-lift" data-id="${product.id}">
                         <!-- Col 1: Image & Wishlist -->
                         <div class="product-card-img-col">
                           <div class="product-img-wrapper" data-action="quickview" data-id="${product.id}">
@@ -429,6 +429,7 @@ export async function renderStorePage(container, queryParams = {}) {
                             `}
                           </div>
                         </div>
+                        <div class="card-3d-glare"></div>
                       </div>
                     `;
                   }).join('')}
@@ -444,6 +445,7 @@ export async function renderStorePage(container, queryParams = {}) {
     `;
 
     attachStoreEvents();
+    trigger3DRefresh();
   }
 
   function attachStoreEvents() {
@@ -577,46 +579,53 @@ export async function renderStorePage(container, queryParams = {}) {
     });
 
     // 10. Product Actions Delegation (Add to Cart, Buy Now, Quickview, Wishlist)
-    container.addEventListener('click', (e) => {
-      const target = e.target.closest('[data-action]');
-      if (!target) return;
+    const storePageEl = container.querySelector('.store-page');
+    if (storePageEl) {
+      storePageEl.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
 
-      const action = target.dataset.action;
-      const productId = target.dataset.id;
-      const product = loadedProducts.find(p => p.id === productId);
+        const action = target.dataset.action;
+        const productId = target.dataset.id;
+        const product = loadedProducts.find(p => p.id === productId);
 
-      if (!product) return;
+        if (!product) return;
 
-      if (action === 'add-cart') {
-        const res = state.addToCart(productId, 1, product);
-        if (res.success) {
-          showToast(res.message, 'success');
-        } else {
-          showToast(res.message, 'warning');
+        if (action === 'add-cart') {
+          const res = state.addToCart(productId, 1, product);
+          if (res.success) {
+            showToast(res.message, 'success');
+          } else {
+            showToast(res.message, 'warning');
+          }
+        } else if (action === 'buy-now') {
+          if (product.inStock === false) {
+            showToast('Product is currently out of stock!', 'error');
+            return;
+          }
+          state.addToCart(productId, 1, product);
+          if (!auth.isAuthenticated()) {
+            openAuthModal('login', {
+              action: 'buy_now',
+              productId: product.id,
+              productData: product,
+              returnHash: window.location.hash || '#store',
+              redirectHash: '#checkout-address',
+              subtitle: 'Please sign in or create an account to proceed with your laptop order'
+            });
+          } else {
+            window.location.hash = '#checkout-address';
+          }
+        } else if (action === 'wishlist') {
+          const added = state.toggleWishlist(productId);
+          api.toggleWishlist(productId).catch(() => {});
+          showToast(added ? `Added "${product.name}" to Wishlist! ❤️` : `Removed "${product.name}" from Wishlist.`, 'info');
+          renderLayout();
+        } else if (action === 'quickview' || action === 'view-product') {
+          window.location.hash = `#product/${productId}`;
         }
-      } else if (action === 'buy-now') {
-        if (product.inStock === false) {
-          showToast('Product is currently out of stock!', 'error');
-          return;
-        }
-        state.addToCart(productId, 1, product);
-        if (!auth.isAuthenticated()) {
-          openAuthModal('login', {
-            redirectHash: '#checkout-address',
-            subtitle: 'Please sign in or create an account to proceed with your laptop order'
-          });
-        } else {
-          window.location.hash = '#checkout-address';
-        }
-      } else if (action === 'wishlist') {
-        const added = state.toggleWishlist(productId);
-        api.toggleWishlist(productId).catch(() => {});
-        showToast(added ? `Added "${product.name}" to Wishlist! ❤️` : `Removed from Wishlist.`, 'success');
-        renderLayout();
-      } else if (action === 'quickview' || action === 'view-product') {
-        window.location.hash = `#product/${productId}`;
-      }
-    });
+      });
+    }
   }
 
   function openQuickViewModal(product) {

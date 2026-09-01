@@ -1,44 +1,32 @@
 /* ==========================================================================
-   Welcome Landing Page Styles
+   LapZon - Modern Premium Welcome Page Styling
+   Brand: Clean White Surface + Orange Gradient Accents + Dark Navy Text
+   Animations: Fast & Subtle (200-400ms), Glass Cards, Soft Shadows
    ========================================================================== */
 
-.welcome-page {
-  background: var(--bg-page);
-  overflow-x: hidden;
-}
-
-/* Hero Section */
-.welcome-hero {
-  background: var(--hero-gradient);
-  color: #ffffff;
-  padding: 5rem 0 6rem;
+/* --------------------------------------------------------------------------
+   1. HERO SHOWCASE SECTION
+   -------------------------------------------------------------------------- */
+.welcome-hero-premium {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 3.5rem 0 4.5rem;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.welcome-hero::before {
+.welcome-hero-premium::before {
   content: '';
   position: absolute;
-  top: -150px;
-  right: -100px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(40, 116, 240, 0.35) 0%, rgba(0,0,0,0) 70%);
-  pointer-events: none;
-}
-
-.welcome-hero::after {
-  content: '';
-  position: absolute;
-  bottom: -100px;
-  left: -50px;
+  top: -120px;
+  right: -80px;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(255, 159, 0, 0.2) 0%, rgba(0,0,0,0) 70%);
+  background: radial-gradient(circle, rgba(255, 107, 0, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
   pointer-events: none;
 }
 
-.hero-grid {
+.hero-premium-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
@@ -47,27 +35,27 @@
   z-index: 2;
 }
 
-.hero-badge-pill {
+.hero-tag-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  padding: 0.45rem 1.1rem;
-  border-radius: var(--radius-full);
+  gap: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--accent-yellow);
-  margin-bottom: 1.5rem;
+  font-weight: 700;
+  color: #c2410c;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 8px rgba(255, 107, 0, 0.08);
 }
 
-.hero-badge-pill span.pulse-dot {
+.hero-tag-dot {
   width: 8px;
   height: 8px;
-  background-color: var(--accent-emerald);
+  background-color: #16a34a;
   border-radius: 50%;
-  box-shadow: 0 0 10px var(--accent-emerald);
+  box-shadow: 0 0 8px #16a34a;
   animation: pulseDot 1.5s infinite;
 }
 
@@ -76,364 +64,793 @@
   50% { transform: scale(1.4); opacity: 0.6; }
 }
 
-.hero-title {
-  font-family: var(--font-display);
-  font-size: 3.4rem;
+.hero-main-heading {
+  font-size: 3.2rem;
   font-weight: 800;
+  color: #0f172a;
   line-height: 1.12;
   letter-spacing: -1px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
-.hero-title .gradient-text {
-  background: linear-gradient(135deg, #ffe11b 0%, #ff9f00 50%, #ff5252 100%);
+.hero-gradient-text {
+  background: linear-gradient(135deg, #ff6b00 0%, #ea580c 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.hero-desc {
-  font-size: 1.15rem;
-  color: #cbd5e1;
+.hero-description-text {
+  font-size: 1.1rem;
+  color: #475569;
   line-height: 1.6;
-  max-width: 580px;
-  margin-bottom: 2.25rem;
+  max-width: 540px;
+  margin-bottom: 2rem;
 }
 
-.hero-cta-group {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  margin-bottom: 3rem;
-}
-
-.btn-get-started {
-  background: linear-gradient(135deg, #ff9f00 0%, #f57c00 100%);
-  color: #ffffff;
-  padding: 1.05rem 2.4rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-  border-radius: var(--radius-xs);
-  box-shadow: 0 8px 24px rgba(255, 159, 0, 0.4);
-  transition: all var(--transition-normal);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-}
-
-.btn-get-started:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(255, 159, 0, 0.55);
-}
-
-.btn-explore-outline {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  padding: 1.05rem 2rem;
-  font-size: 1.05rem;
-  font-weight: 600;
-  border-radius: var(--radius-xs);
-  backdrop-filter: blur(8px);
-  text-decoration: none;
-  transition: all var(--transition-normal);
-}
-
-.btn-explore-outline:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: #ffffff;
-  transform: translateY(-2px);
-}
-
-.hero-stats {
-  display: flex;
-  align-items: center;
-  gap: 2.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.hero-stat-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.stat-label {
-  font-size: 0.82rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-/* Hero Right Showcase Visual */
-.hero-visual-wrap {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.hero-laptop-card {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(16px);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 460px;
-  box-shadow: var(--shadow-xl), 0 0 40px rgba(40, 116, 240, 0.3);
-  position: relative;
-  animation: floatLaptop 4s ease-in-out infinite;
-}
-
-@keyframes floatLaptop {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(0.5deg); }
-}
-
-.hero-laptop-img {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  margin-bottom: 1.25rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-}
-
-.floating-badge {
-  position: absolute;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(12px);
-  padding: 0.65rem 1rem;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #fff;
-}
-
-.floating-badge.badge-top-left {
-  top: -15px;
-  left: -20px;
-  border-left: 3px solid var(--accent-yellow);
-}
-
-.floating-badge.badge-bottom-right {
-  bottom: -15px;
-  right: -20px;
-  border-left: 3px solid var(--accent-emerald);
-}
-
-/* Value Props Banner */
-.welcome-trust-strip {
-  background-color: var(--bg-surface);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 1.75rem 0;
-  box-shadow: var(--shadow-sm);
-}
-
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-}
-
-.trust-card {
+.hero-btn-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
 }
 
-.trust-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-sm);
-  background-color: rgba(40, 116, 240, 0.08);
-  color: var(--primary-blue);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.trust-info h5 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 2px;
-}
-
-.trust-info p {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-/* Category Grid Section */
-.welcome-categories {
-  padding: 4.5rem 0;
-}
-
-.section-header-center {
-  text-align: center;
-  max-width: 650px;
-  margin: 0 auto 3rem;
-}
-
-.section-header-center h2 {
-  font-family: var(--font-display);
-  font-size: 2.2rem;
+.btn-hero-primary {
+  background: linear-gradient(135deg, #ff7a00 0%, #ff5500 100%);
+  color: #ffffff;
+  padding: 0.95rem 2rem;
+  border-radius: 12px;
+  font-size: 1.05rem;
   font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 0.5rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(255, 107, 0, 0.35);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
 }
 
-.section-header-center p {
-  color: var(--text-secondary);
-  font-size: 1rem;
+.btn-hero-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(255, 107, 0, 0.45);
 }
 
-.category-cards-grid {
+.btn-hero-secondary {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  padding: 0.95rem 1.8rem;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.btn-hero-secondary:hover {
+  border-color: #ff6b00;
+  color: #ff6b00;
+  background: #fff7ed;
+  transform: translateY(-2px);
+}
+
+/* Key Metrics Strip */
+.hero-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
 }
 
-.cat-card {
-  background-color: var(--bg-surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  padding: 1.75rem 1.25rem;
+.hero-stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.stat-lbl {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Right Showcase Card (Clean Modern Solid Card) */
+.hero-right-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.hero-image-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  border: 1.5px solid #e2e8f0;
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.hero-image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12), 0 0 20px rgba(255, 107, 0, 0.15);
+  border-color: #ff6b00;
+}
+
+.hero-flagship-img {
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-image-card:hover .hero-flagship-img {
+  transform: scale(1.03);
+}
+
+/* --------------------------------------------------------------------------
+   2. POPULAR OFFICIAL BRANDS STRIP (Clean Modern Brand Cards)
+   -------------------------------------------------------------------------- */
+.popular-brands-section {
+  padding: 3.5rem 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.brands-section-header {
   text-align: center;
-  cursor: pointer;
-  transition: all var(--transition-normal);
+  margin-bottom: 2rem;
+}
+
+.sub-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ff6b00;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.section-title-sm {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.brands-clean-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 1.25rem;
+}
+
+.brand-clean-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 1.35rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-align: center;
   text-decoration: none;
-  color: inherit;
-  box-shadow: var(--shadow-sm);
+  position: relative;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.cat-card:hover {
-  transform: translateY(-6px);
-  border-color: var(--primary-blue);
-  box-shadow: var(--shadow-lg);
+.brand-clean-card:hover {
+  background: #ffffff;
+  border-color: #ff6b00;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(255, 107, 0, 0.12);
 }
 
-.cat-card-icon {
-  width: 68px;
-  height: 68px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(40, 116, 240, 0.1), rgba(40, 116, 240, 0.02));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  margin-bottom: 1.25rem;
-  transition: transform var(--transition-normal);
+.brand-icon {
+  font-size: 1.85rem;
+  margin-bottom: 0.45rem;
+  transition: transform 0.2s ease;
 }
 
-.cat-card:hover .cat-card-icon {
-  transform: scale(1.1) rotate(4deg);
+.brand-clean-card:hover .brand-icon {
+  transform: scale(1.1);
 }
 
-.cat-card h4 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.4rem;
-}
-
-.cat-card p {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-}
-
-.cat-card-cta {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Featured Deals Banner */
-.welcome-deals-banner {
-  background: linear-gradient(135deg, #172337 0%, #2874f0 100%);
-  border-radius: var(--radius-lg);
-  padding: 3rem;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  margin: 1rem 0 4.5rem;
-  box-shadow: var(--shadow-xl);
-}
-
-.deals-banner-content h3 {
-  font-family: var(--font-display);
-  font-size: 2rem;
+.brand-name {
   font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.brand-tag {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   3. FEATURED PRODUCTS & BEST DEALS GRID (Clean Modern Cards)
+   -------------------------------------------------------------------------- */
+.featured-laptops-section {
+  padding: 4.5rem 0;
+  background: #f8fafc;
+}
+
+.section-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.section-main-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.section-subtext {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.featured-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.75rem;
+}
+
+/* Modern Clean Product Card */
+.product-modern-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.product-modern-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08), 0 0 15px rgba(255, 107, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+.card-badges-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.75rem;
 }
 
-.deals-banner-content p {
-  font-size: 1.05rem;
-  color: #e2e8f0;
-  margin-bottom: 1.5rem;
+.card-brand-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
 
+.card-discount-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* Image with Zoom */
+.card-img-link {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f8fafc;
+  margin-bottom: 1rem;
+}
+
+.card-laptop-img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-modern-card:hover .card-laptop-img {
+  transform: scale(1.05);
+}
+
+.card-info-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.rating-pill {
+  background: #16a34a;
+  color: #ffffff;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+}
+
+.reviews-count {
+  color: #64748b;
+}
+
+.stock-status-pill {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+.card-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-laptop-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  margin: 0 0 0.6rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.15s ease;
+}
+
+.card-laptop-title:hover {
+  color: #ff6b00;
+}
+
+.card-specs-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.spec-chip {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.card-pricing-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: auto;
+  margin-bottom: 1rem;
+}
+
+.price-current {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.price-original {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+/* Actions Row */
+.card-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-card-cart {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-card-cart:hover {
+  background: #fff7ed;
+  border-color: #ff6b00;
+  color: #ff6b00;
+}
+
+.btn-card-buy {
+  background: linear-gradient(135deg, #ff7a00 0%, #ff5500 100%);
+  border: none;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.84rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(255, 107, 0, 0.25);
+}
+
+.btn-card-buy:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(255, 107, 0, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   4. ADVANTAGE SECTION
+   -------------------------------------------------------------------------- */
+.lapzon-advantage-section {
+  padding: 4.5rem 0;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+.advantage-header {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 3rem;
+}
+
+.advantage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.75rem;
+}
+
+.advantage-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 2rem 1.75rem;
+  transition: all 0.25s ease;
+}
+
+.advantage-card:hover {
+  background: #ffffff;
+  border-color: #ff6b00;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(255, 107, 0, 0.08);
+}
+
+.adv-icon-wrap {
+  font-size: 2.4rem;
+  margin-bottom: 1rem;
+}
+
+.advantage-card h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.5rem;
+}
+
+.advantage-card p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. CUSTOMER REVIEWS
+   -------------------------------------------------------------------------- */
+.customer-reviews-section {
+  padding: 4.5rem 0;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reviews-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.reviews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.75rem;
+}
+
+.review-glass-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 1.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.review-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.verified-buyer-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.review-body-text {
+  font-size: 0.92rem;
+  color: #334155;
+  line-height: 1.6;
+  margin: 0 0 1.25rem;
+}
+
+.review-author-info strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.review-author-info span {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* --------------------------------------------------------------------------
+   6. PREMIUM FOOTER (Image 2 Redesign)
+   -------------------------------------------------------------------------- */
+.lapzon-premium-footer {
+  background: #0f172a;
+  color: #94a3b8;
+  padding: 4rem 0 2rem;
+  border-top: 1px solid #1e293b;
+}
+
+.footer-columns-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 2.5rem;
+  margin-bottom: 3rem;
+}
+
+.footer-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.footer-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #ff6b00;
+}
+
+.footer-brand-name {
+  display: flex;
+  flex-direction: column;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.highlight-orange {
+  color: #ff6b00;
+}
+
+.footer-tagline {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.footer-about-p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #94a3b8;
+  margin-bottom: 1.25rem;
+}
+
+.footer-support-contact-box {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.contact-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #e2e8f0;
+}
+
+.contact-line a {
+  color: #ff6b00;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.footer-links-col h4 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 1.25rem;
+}
+
+.footer-links-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.footer-links-col ul a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: color 0.15s ease;
+}
+
+.footer-links-col ul a:hover {
+  color: #ff6b00;
+}
+
+.trust-list li {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-bottom-bar {
+  border-top: 1px solid #1e293b;
+  padding-top: 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.82rem;
+}
+
+.footer-security-badges {
+  display: flex;
+  gap: 1.25rem;
+  color: #cbd5e1;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   7. SKELETON SHIMMER ANIMATION
+   -------------------------------------------------------------------------- */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.product-skeleton-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+}
+
+.skeleton-line {
+  height: 14px;
+  margin-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   8. RESPONSIVE BREAKPOINTS
+   -------------------------------------------------------------------------- */
 @media (max-width: 992px) {
-  .hero-grid {
+  .hero-premium-grid {
     grid-template-columns: 1fr;
-    text-align: center;
+    gap: 2.5rem;
   }
-  .hero-badge-pill {
-    margin: 0 auto 1.5rem;
+
+  .hero-main-heading {
+    font-size: 2.5rem;
   }
-  .hero-desc {
-    margin: 0 auto 2rem;
-  }
-  .hero-cta-group {
-    justify-content: center;
-  }
-  .hero-stats {
-    justify-content: center;
-  }
-  .trust-grid {
+
+  .footer-columns-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .category-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .welcome-deals-banner {
-    flex-direction: column;
-    text-align: center;
   }
 }
 
 @media (max-width: 640px) {
-  .hero-title {
-    font-size: 2.3rem;
+  .welcome-hero-premium {
+    padding: 2.5rem 0 3rem;
   }
-  .trust-grid {
+
+  .hero-main-heading {
+    font-size: 2rem;
+  }
+
+  .hero-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .footer-columns-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
-  .category-cards-grid {
+
+  .card-actions-row {
     grid-template-columns: 1fr;
   }
 }

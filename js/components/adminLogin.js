@@ -20,15 +20,13 @@ export function renderAdminLogin(container) {
       <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-xl); overflow: hidden;">
         
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 2rem; text-align: center;">
-          <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #ffe11b, #ff9f00); border-radius: var(--radius-sm); color: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; margin: 0 auto 0.75rem;">
-            👑
-          </div>
+        <div style="background: linear-gradient(135deg, #090e17 0%, #1e293b 100%); color: #fff; padding: 2rem; text-align: center;">
+          <img src="assets/images/lapzon-logo.png" style="width: 56px; height: 56px; border-radius: 10px; border: 1.5px solid #ff6b00; margin: 0 auto 0.75rem; display: block; box-shadow: 0 4px 12px rgba(255,107,0,0.3);" alt="LapZon Admin" />
           <h2 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: #fff;">
-            Admin & Owner Portal
+            LapZon Admin & Owner Portal
           </h2>
           <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">
-            Secure access for product approvals, inventory & dispatch
+            Quality Products, Trusted Service • Management & Security
           </p>
         </div>
 
@@ -55,7 +53,7 @@ export function renderAdminLogin(container) {
 
             <div class="form-group">
               <label for="admin-password">Secure Password <span class="req">*</span></label>
-              <input type="password" id="admin-password" placeholder="••••••••••••" required autocomplete="current-password" />
+              <input type="password" id="admin-password" placeholder="Enter password" required autocomplete="current-password" />
             </div>
 
             <button type="submit" class="btn btn-orange btn-lg btn-block" id="btn-submit-admin-login" style="margin-top: 0.5rem;">
