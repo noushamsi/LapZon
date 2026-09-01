@@ -46,26 +46,28 @@ export function initCartDrawer() {
   const overlay = document.getElementById('cart-drawer-overlay');
   const closeBtn = document.getElementById('btn-close-cart');
 
-  window.addEventListener('lapkart:toggle-cart', () => {
-    overlay.classList.toggle('active');
-    renderCartContents();
-  });
-
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
-  }
-
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      overlay.classList.remove('active');
-    }
-  });
-
-  state.subscribe('cart', () => {
-    if (overlay.classList.contains('active')) {
+  if (overlay) {
+    window.addEventListener('lapkart:toggle-cart', () => {
+      overlay.classList.toggle('active');
       renderCartContents();
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
     }
-  });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
+      }
+    });
+
+    state.subscribe('cart', () => {
+      if (overlay.classList.contains('active')) {
+        renderCartContents();
+      }
+    });
+  }
 }
 
 export function openCart() {

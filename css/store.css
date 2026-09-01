@@ -1100,6 +1100,50 @@
   border: 1px solid #fca5a5;
 }
 
+/* Product Details Action Buttons */
+.pdp-action-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+.pdp-action-buttons-group .btn {
+  height: 48px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.pdp-btn-buy {
+  background: linear-gradient(135deg, #ff7a00 0%, #ff5500 100%) !important;
+  box-shadow: 0 4px 14px rgba(255, 107, 0, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.pdp-btn-buy:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.45) !important;
+}
+
+.pdp-btn-cart {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2) !important;
+}
+
+.pdp-btn-cart:hover {
+  background: #1e293b !important;
+  transform: translateY(-2px);
+}
+
 /* Offers list */
 .pdp-offers-card {
   margin-bottom: 1.5rem;
@@ -1255,5 +1299,219 @@
 
 .similar-laptop-card:hover .similar-item-title {
   color: var(--primary-blue);
+}
+
+/* ==========================================================================
+   Store, PDP, Cart & Checkout Mobile Responsive Suite (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Store Catalog Layout */
+  .store-page {
+    padding: 1rem 0 4rem;
+  }
+
+  .store-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .filters-sidebar {
+    position: static;
+    max-height: none;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .store-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+
+  .toolbar-left, .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-select {
+    width: 100%;
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .product-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .product-card-img-wrap {
+    height: 125px;
+  }
+
+  .product-card-title {
+    font-size: 0.85rem;
+    line-height: 1.3;
+    height: 2.6em;
+    margin-bottom: 0.35rem;
+  }
+
+  .product-card-specs-chips {
+    gap: 3px;
+    margin-bottom: 0.5rem;
+  }
+
+  .spec-chip {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .product-card-price-current {
+    font-size: 1.1rem;
+  }
+
+  .product-card-price-mrp {
+    font-size: 0.78rem;
+  }
+
+  .product-card-actions {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .product-card-actions .btn {
+    width: 100%;
+    height: 36px;
+    font-size: 0.8rem;
+    padding: 0 0.5rem;
+  }
+
+  /* Product Details Page (PDP) Mobile Layout */
+  .product-details-page {
+    padding: 1rem 0 5rem;
+  }
+
+  .pdp-layout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .pdp-gallery-sticky {
+    position: static !important;
+  }
+
+  .pdp-main-image-wrap {
+    height: 250px !important;
+    max-height: 250px !important;
+    padding: 0.75rem !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    border: 1.5px solid #e2e8f0 !important;
+  }
+
+  .pdp-main-img {
+    max-height: 220px !important;
+    object-fit: contain !important;
+  }
+
+  .pdp-thumbnails-strip {
+    gap: 0.5rem !important;
+    margin-top: 0.75rem !important;
+    overflow-x: auto !important;
+    padding-bottom: 4px !important;
+  }
+
+  .pdp-thumb-item {
+    width: 60px !important;
+    height: 60px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .pdp-cta-group {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .pdp-cta-group .btn {
+    flex: 1 !important;
+    height: 48px !important;
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+  }
+
+  .pdp-title {
+    font-size: 1.35rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .pdp-price-card {
+    padding: 1rem !important;
+  }
+
+  .pdp-current-price {
+    font-size: 1.6rem !important;
+  }
+
+  .pdp-quantity-calculator-box {
+    padding: 1rem !important;
+  }
+
+  .pdp-full-specs-table {
+    font-size: 0.82rem !important;
+  }
+
+  .pdp-full-specs-table td {
+    padding: 0.5rem 0.25rem !important;
+  }
+
+  .pdp-full-specs-table .spec-label {
+    width: 38% !important;
+  }
+
+  /* Big Cart Page on Mobile */
+  .big-cart-page-wrapper {
+    padding: 1rem 0 5rem !important;
+  }
+
+  .big-cart-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  .big-cart-card > a {
+    width: 100% !important;
+    height: 130px !important;
+  }
+
+  /* Cart Drawer Width on Mobile */
+  .cart-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Checkout Layout on Mobile */
+  .checkout-page {
+    padding: 1rem 0 5rem !important;
+  }
+
+  .checkout-stepper {
+    padding: 0.75rem 0.5rem !important;
+    overflow-x: auto !important;
+  }
+
+  .step-label {
+    font-size: 0.75rem !important;
+  }
 }
 

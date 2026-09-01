@@ -297,6 +297,43 @@ export function renderNavbar() {
           `}
         </div>
       </aside>
+
+      <!-- Modern Mobile Bottom App Navigation Bar (Visible only on <= 768px) -->
+      <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile Navigation">
+        <a href="#welcome" class="bottom-nav-item ${currentHash === '#welcome' || currentHash === '' ? 'active' : ''}" id="bnav-home">
+          <span class="bnav-icon">🏠</span>
+          <span class="bnav-label">Home</span>
+        </a>
+
+        <a href="#store" class="bottom-nav-item ${currentHash.startsWith('#store') ? 'active' : ''}" id="bnav-store">
+          <span class="bnav-icon">💻</span>
+          <span class="bnav-label">Store</span>
+        </a>
+
+        <a href="#wishlist" class="bottom-nav-item ${currentHash.startsWith('#wishlist') ? 'active' : ''}" id="bnav-wishlist">
+          <span class="bnav-icon">💖</span>
+          <span class="bnav-label">Wishlist</span>
+          ${state.getWishlist().length > 0 ? `<span class="bnav-badge">${state.getWishlist().length}</span>` : ''}
+        </a>
+
+        <a href="#cart" class="bottom-nav-item ${currentHash.startsWith('#cart') ? 'active' : ''}" id="bnav-cart">
+          <span class="bnav-icon">🛒</span>
+          <span class="bnav-label">Cart</span>
+          ${cartCount > 0 ? `<span class="bnav-badge">${cartCount}</span>` : ''}
+        </a>
+
+        ${user ? `
+          <a href="#user-dashboard" class="bottom-nav-item ${currentHash.startsWith('#user-dashboard') || currentHash.startsWith('#my-orders') ? 'active' : ''}" id="bnav-account">
+            <span class="bnav-icon">👤</span>
+            <span class="bnav-label">Account</span>
+          </a>
+        ` : `
+          <button type="button" class="bottom-nav-item bnav-menu-btn" id="bnav-menu-toggle" aria-label="Open Navigation Menu">
+            <span class="bnav-icon">☰</span>
+            <span class="bnav-label">Menu</span>
+          </button>
+        `}
+      </nav>
     `;
   }
 
@@ -304,10 +341,12 @@ export function renderNavbar() {
   const existingRibbon = document.querySelector('.header-top-ribbon');
   const existingDrawer = document.getElementById('mobile-nav-drawer');
   const existingBackdrop = document.getElementById('mobile-nav-backdrop');
+  const existingBottomNav = document.getElementById('mobile-bottom-nav');
 
   if (existingRibbon && typeof existingRibbon.remove === 'function') existingRibbon.remove();
   if (existingDrawer && typeof existingDrawer.remove === 'function') existingDrawer.remove();
   if (existingBackdrop && typeof existingBackdrop.remove === 'function') existingBackdrop.remove();
+  if (existingBottomNav && typeof existingBottomNav.remove === 'function') existingBottomNav.remove();
 
   if (existingHeader) {
     existingHeader.outerHTML = headerHtml;
@@ -403,6 +442,13 @@ function attachNavbarEvents() {
       } else {
         openMobileMenu();
       }
+    });
+  }
+
+  const bnavMenuToggle = document.getElementById('bnav-menu-toggle');
+  if (bnavMenuToggle) {
+    bnavMenuToggle.addEventListener('click', () => {
+      openMobileMenu();
     });
   }
 
