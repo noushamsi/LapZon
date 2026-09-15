@@ -1107,9 +1107,49 @@ app.post('/api/auth/admin/reset-password', async (req, res) => {
 // GOOGLE OAUTH 2.0 / OPENID CONNECT OFFICIAL AUTHENTICATION ENDPOINTS
 // ==========================================================================
 
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || '').trim();
-const GOOGLE_CLIENT_SECRET = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
-const GOOGLE_REDIRECT_URI = (process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8080/api/auth/google/callback').trim();
+function cleanEnvValue(val) {
+  if (!val || typeof val !== 'string') return '';
+  return val.trim().replace(/^["']|["']$/g, '').trim();
+}
+
+function getGoogleClientId() {
+  return cleanEnvValue(process.env.GOOGLE_CLIENT_ID);
+}
+
+function getGoogleClientSecret() {
+  return cleanEnvValue(process.env.GOOGLE_CLIENT_SECRET);
+}
+
+function getGoogleRedirectUri(req) {
+  let envUri = cleanEnvValue(process.env.GOOGLE_REDIRECT_URI);
+  if (envUri.endsWith('/api/auth/google/callback/')) {
+    envUri = envUri.slice(0, -1);
+  }
+
+  const host = req ? (req.get('x-forwarded-host') || req.get('host')) : null;
+  const isReqLocal = !host || host.startsWith('localhost') || host.startsWith('127.0.0.1');
+
+  // 1. If an explicit production redirect URI is configured, use it
+  if (envUri && !envUri.includes('localhost')) {
+    return envUri;
+  }
+
+  // 2. If running in production (request host is not localhost, e.g. on Render),
+  // NEVER use localhost. Dynamically use the production domain.
+  if (req && !isReqLocal) {
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+    return `${proto}://${host}/api/auth/google/callback`;
+  }
+
+  // 3. For local development, use envUri if set
+  if (envUri) {
+    return envUri;
+  }
+
+  // 4. Fallback for local development
+  const port = process.env.PORT || 8080;
+  return `http://localhost:${port}/api/auth/google/callback`;
+}
 
 function isConfiguredGoogleClientId(id) {
   return Boolean(id && !id.includes('your_google_client_id') && !id.includes('-demo.') && (id.endsWith('.apps.googleusercontent.com') || id.length > 20));
@@ -1126,14 +1166,19 @@ app.get('/api/auth/google/config', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  const isConfigured = isConfiguredGoogleClientId(GOOGLE_CLIENT_ID);
-  const redirectUri = GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
-  const authUrl = isConfigured ? getGoogleAuthUrl(GOOGLE_CLIENT_ID, redirectUri) : null;
+
+  // Safe diagnostic logging on the SERVER ONLY (Requirement 9)
+  console.log("Google OAuth redirect URI:", process.env.GOOGLE_REDIRECT_URI);
+
+  const clientId = getGoogleClientId();
+  const isConfigured = isConfiguredGoogleClientId(clientId);
+  const redirectUri = getGoogleRedirectUri(req);
+  const authUrl = isConfigured ? getGoogleAuthUrl(clientId, redirectUri) : null;
   
   return res.json({
     success: true,
     isConfigured,
-    clientId: isConfigured ? GOOGLE_CLIENT_ID : '',
+    clientId: isConfigured ? clientId : '',
     redirectUri,
     authUrl,
     message: isConfigured 
@@ -1147,8 +1192,13 @@ app.get('/api/auth/google/login', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  const isConfigured = isConfiguredGoogleClientId(GOOGLE_CLIENT_ID);
-  const redirectUri = GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+
+  // Safe diagnostic logging on the SERVER ONLY (Requirement 9)
+  console.log("Google OAuth redirect URI:", process.env.GOOGLE_REDIRECT_URI);
+
+  const clientId = getGoogleClientId();
+  const isConfigured = isConfiguredGoogleClientId(clientId);
+  const redirectUri = getGoogleRedirectUri(req);
 
   if (!isConfigured) {
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -1164,7 +1214,7 @@ app.get('/api/auth/google/login', (req, res) => {
     return res.redirect(`/#auth-error?message=${encodeURIComponent('Google Client ID not configured in .env file. Please add your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.')}`);
   }
 
-  const authUrl = getGoogleAuthUrl(GOOGLE_CLIENT_ID, redirectUri);
+  const authUrl = getGoogleAuthUrl(clientId, redirectUri);
 
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
     return res.json({ success: true, authUrl });
@@ -1176,6 +1226,9 @@ app.get('/api/auth/google/login', (req, res) => {
 app.get('/api/auth/google/callback', async (req, res) => {
   const { code, error, error_description } = req.query;
 
+  // Safe diagnostic logging on the SERVER ONLY (Requirement 9)
+  console.log("Google OAuth redirect URI:", process.env.GOOGLE_REDIRECT_URI);
+
   if (error) {
     console.warn('Google OAuth error from callback:', error, error_description);
     return res.redirect(`/#auth-error?message=${encodeURIComponent(error_description || error)}`);
@@ -1186,19 +1239,21 @@ app.get('/api/auth/google/callback', async (req, res) => {
   }
 
   try {
-    const redirectUri = GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+    const clientId = getGoogleClientId();
+    const clientSecret = getGoogleClientSecret();
+    const redirectUri = getGoogleRedirectUri(req);
     let googleUser = null;
 
     // Exchange authorization code for tokens with Google OAuth 2.0 token endpoint
-    if (GOOGLE_CLIENT_SECRET) {
+    if (clientSecret) {
       try {
         const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             code,
-            client_id: GOOGLE_CLIENT_ID,
-            client_secret: GOOGLE_CLIENT_SECRET,
+            client_id: clientId,
+            client_secret: clientSecret,
             redirect_uri: redirectUri,
             grant_type: 'authorization_code'
           })
@@ -2212,6 +2267,7 @@ app.get('*', (req, res) => {
 const server = app.listen(PORT, HOST, () => {
   console.log(`⚡ LapZon Full-Stack Server running at: http://${HOST}:${PORT}`);
   console.log(`🌐 Public / Cloud Host: ${HOST}:${PORT}`);
+  console.log("Google OAuth redirect URI:", process.env.GOOGLE_REDIRECT_URI);
   console.log(`🔐 Admin Login: admin@lapkart.com / Admin@123`);
   console.log(`👤 Customer Login: customer@gmail.com / User@123`);
 });

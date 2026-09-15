@@ -21,7 +21,10 @@ export function loadEnv() {
             if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
               val = val.slice(1, -1);
             }
-            process.env[key] = val;
+            // Only set if not already defined in the environment (e.g. Render environment variables take precedence)
+            if (process.env[key] === undefined || process.env[key] === '') {
+              process.env[key] = val;
+            }
           }
         }
       });
