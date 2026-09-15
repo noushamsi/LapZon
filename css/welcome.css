@@ -320,8 +320,227 @@
 
 .featured-products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.75rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1200px) {
+  .featured-products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .featured-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .featured-products-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Amazon-Style Product Card (Exact Match to User Reference) */
+.product-amazon-card {
+  background: #ffffff;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  padding: 14px 14px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.product-amazon-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.product-amazon-card .welcome-wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: transform 0.18s ease;
+  font-size: 0.9rem;
+}
+
+.product-amazon-card .welcome-wishlist-btn:hover {
+  transform: scale(1.1);
+}
+
+.card-amazon-img-wrap {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
+.card-amazon-img {
+  max-width: 95%;
+  max-height: 185px;
+  object-fit: contain;
+  transition: transform 0.25s ease;
+}
+
+.product-amazon-card:hover .card-amazon-img {
+  transform: scale(1.03);
+}
+
+.card-amazon-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-amazon-title-link {
+  text-decoration: none;
+  color: #0f1111;
+  margin-bottom: 6px;
+}
+
+.card-amazon-title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #0f1111;
+  line-height: 1.38;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.15s ease;
+}
+
+.card-amazon-title:hover {
+  color: #c45500;
+}
+
+.card-amazon-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  margin-bottom: 2px;
+}
+
+.amazon-rating-num {
+  font-weight: 700;
+  color: #0f1111;
+  font-size: 0.85rem;
+}
+
+.amazon-stars {
+  color: #de7921;
+  font-size: 0.92rem;
+  letter-spacing: 1px;
+}
+
+.amazon-rating-count {
+  color: #007185;
+  font-size: 0.82rem;
+  margin-left: 2px;
+}
+
+.card-amazon-bought {
+  font-size: 0.78rem;
+  color: #565959;
+  margin-bottom: 8px;
+}
+
+.card-amazon-price-block {
+  margin-top: auto;
+  margin-bottom: 6px;
+}
+
+.card-amazon-main-price {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #0f1111;
+  line-height: 1.15;
+}
+
+.card-amazon-mrp-row {
+  font-size: 0.82rem;
+  color: #565959;
+  margin-top: 3px;
+}
+
+.card-amazon-mrp-val {
+  text-decoration: line-through;
+}
+
+.card-amazon-discount {
+  color: #0f1111;
+  font-weight: 600;
+  margin-left: 3px;
+}
+
+.card-amazon-bank-offer {
+  font-size: 0.78rem;
+  color: #0f1111;
+  font-weight: 500;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.card-amazon-delivery {
+  font-size: 0.82rem;
+  color: #565959;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.card-amazon-delivery strong {
+  color: #0f1111;
+  font-weight: 700;
+}
+
+.btn-amazon-add-cart {
+  background: #ffd814;
+  border: 1px solid #fcd200;
+  border-radius: 100px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #0f1111;
+  width: 100%;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 5px rgba(213, 217, 217, 0.5);
+}
+
+.btn-amazon-add-cart:hover {
+  background: #f7ca00;
+  border-color: #f2c200;
+  box-shadow: 0 2px 6px rgba(213, 217, 217, 0.75);
+}
+
+.btn-amazon-add-cart:active {
+  background: #f0b800;
+  box-shadow: 0 1px 3px rgba(213, 217, 217, 0.5) inset;
 }
 
 /* Modern Clean Product Card */

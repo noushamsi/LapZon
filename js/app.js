@@ -7,6 +7,15 @@ import { renderNavbar } from './components/navbar.js';
 import { initCartDrawer } from './components/cart.js';
 import { router } from './router.js';
 import { init3DTilt, initScrollReveals } from './services/tilt.js';
+import { openAuthModal, closeAuthModal } from './components/authModal.js';
+import { auth } from './services/auth.js';
+import { state } from './state.js';
+
+// Expose globally for convenience
+if (typeof window !== 'undefined') {
+  window.openAuthModal = openAuthModal;
+  window.closeAuthModal = closeAuthModal;
+}
 
 export function trigger3DRefresh() {
   setTimeout(() => {
@@ -15,38 +24,17 @@ export function trigger3DRefresh() {
   }, 60);
 }
 
-// Toast Notification Service
-export function showToast(message, type = 'success') {
-  let container = document.getElementById('toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toast-container';
-    document.body.appendChild(container);
-  }
-
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  
-  let icon = 'ℹ️';
-  if (type === 'success') icon = '✓';
-  if (type === 'warning') icon = '⚠️';
-  if (type === 'error') icon = '✕';
-
-  toast.innerHTML = `
-    <span style="font-weight: 800; font-size: 1.1rem;">${icon}</span>
-    <span>${message}</span>
-  `;
-
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.animation = 'toastFadeOut 0.3s forwards';
-    setTimeout(() => toast.remove(), 300);
-  }, 3200);
-}
+// Toast & Notification Service
+export { showToast, showAuthSuccessNotification } from './services/toast.js';
 
 // App Initialization Function
 function startApp() {
+  // Restore authenticated customer country and currency
+  const user = auth.getUser();
+  if (user && user.country) {
+    state.setRegion(user.country);
+  }
+
   renderNavbar();
   initCartDrawer();
 

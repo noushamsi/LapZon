@@ -35,7 +35,7 @@ export async function renderCheckoutAddress(container) {
   let showNewForm = addresses.length === 0;
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   container.innerHTML = `
@@ -127,8 +127,8 @@ export async function renderCheckoutAddress(container) {
 
                     <!-- Mobile Number -->
                     <div class="form-group">
-                      <label for="addr-phone">Mobile Number (10 Digits) <span class="req">*</span></label>
-                      <input type="tel" id="addr-phone" placeholder="e.g. 9876543210" maxlength="10" required />
+                      <label for="addr-phone">Mobile Number <span class="req">*</span></label>
+                      <input type="tel" id="addr-phone" value="${state.getPhone() || ''}" placeholder="Enter mobile number" required />
                       <span class="form-error-msg" id="err-phone"></span>
                     </div>
 
@@ -426,8 +426,9 @@ function attachAddressEvents(container) {
         isValid = false;
       } else clearFieldError('fullname');
 
-      if (!phone || !/^\d{10}$/.test(phone)) {
-        setFieldError('phone', 'Please enter a valid 10-digit Mobile Number');
+      const rawPhone = phone.replace(/[\s\-\+\(\)]/g, '');
+      if (!rawPhone || rawPhone.length < 8 || rawPhone.length > 15 || !/^\d+$/.test(rawPhone)) {
+        setFieldError('phone', 'Please enter a valid Mobile Number (8-15 digits)');
         isValid = false;
       } else clearFieldError('phone');
 
@@ -524,7 +525,7 @@ export function renderCheckoutPayment(container) {
   const totals = state.getCartTotals(couponDiscount);
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   container.innerHTML = `
@@ -711,17 +712,24 @@ function attachPaymentEvents(container, totals) {
     const { couponCode, discount: couponDiscount } = getAppliedCoupon();
     const finalTotals = state.getCartTotals(couponDiscount);
 
-    const user = auth.getUser();
+    const user = auth.getCustomerUser() || auth.getUser();
     const customerInfo = {
       ...activeAddress,
       userId: user?.id || null,
-      email: user?.email || activeAddress.email || null
+      email: user?.email || state.getUser()?.email || activeAddress.email || null
     };
+
+    const activeRegion = state.getRegion();
+    const activeMarket = state.getActiveMarket();
+    const activeCurrency = activeRegion.code === 'AE' ? 'AED' : 'INR';
 
     const orderPayload = {
       customer: customerInfo,
       items: cart,
+      market: activeMarket,
+      currency: activeCurrency,
       pricing: {
+        currency: activeCurrency,
         itemsTotal: finalTotals.mrpTotal,
         discount: finalTotals.totalDiscount,
         delivery: 0,
@@ -789,7 +797,7 @@ export async function renderOrderConfirmed(container, orderId) {
   }
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   container.innerHTML = `

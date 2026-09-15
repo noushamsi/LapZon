@@ -26,7 +26,7 @@ export function renderOrderTracking(container, orderId) {
   let currentOrder = null;
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   function formatTime(isoStr) {

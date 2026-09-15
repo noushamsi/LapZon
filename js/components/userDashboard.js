@@ -190,7 +190,7 @@ export async function renderUserDashboard(container, forcedTab = null) {
 
 function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refData, referralCode, referralLink, tickets, returns, user }) {
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   // 1. MY ORDERS TAB
@@ -550,7 +550,8 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
   // 7. PROFILE TAB
   return `
     <div style="background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 2rem;">
-      <h3 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 1.5rem;">Customer Profile Settings</h3>
+      <h3 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Customer Profile Settings</h3>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">Manage your personal details, phone number, and regional currency preferences.</p>
       
       <form id="form-user-profile" style="max-width: 500px;">
         <div style="margin-bottom: 1rem;">
@@ -563,9 +564,19 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
           <input type="email" value="${user.email || ''}" disabled style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: #f1f5f9; color: #64748b;" />
         </div>
 
+        <!-- Phone Number with Dual Country Selector -->
         <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Mobile Number</label>
-          <input type="tel" id="prof-phone-input" value="${user.phone || ''}" placeholder="10-digit mobile number" style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">Mobile Number & Region</label>
+          <div style="display: flex; gap: 6px;">
+            <select id="prof-dial-code" style="padding: 0.65rem 0.5rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-weight: 800; font-size: 0.85rem; background: #f8fafc; cursor: pointer;">
+              <option value="IN" ${state.getRegionCode() === 'IN' ? 'selected' : ''}>🇮🇳 +91 (₹ INR)</option>
+              <option value="AE" ${state.getRegionCode() === 'AE' ? 'selected' : ''}>🇦🇪 +971 (AED)</option>
+            </select>
+            <input type="tel" id="prof-phone-input" value="${user.phone || state.getPhone() || ''}" placeholder="${state.getRegionCode() === 'IN' ? '9876543210' : '501234567'}" style="flex: 1; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;" />
+          </div>
+          <div style="font-size: 0.76rem; color: #ea580c; font-weight: 600; margin-top: 4px;">
+            Active Store Currency: ${state.getRegion().flag} ${state.getRegion().currencyName}
+          </div>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
@@ -925,12 +936,14 @@ function attachUserDashboardEvents(container, context) {
       e.preventDefault();
       const name = document.getElementById('prof-name-input').value.trim();
       const phone = document.getElementById('prof-phone-input').value.trim();
+      const dialCode = document.getElementById('prof-dial-code')?.value || 'IN';
       const password = document.getElementById('prof-pass-input').value;
 
       try {
+        state.setRegionFromPhone(phone, dialCode);
         const res = await api.updateProfile({ name, phone, password: password || undefined });
         auth.setSession(auth.getToken(), res.user);
-        showToast('Profile updated successfully! ✓', 'success');
+        showToast('Profile and currency preferences updated! ✓', 'success');
         renderUserDashboard(container);
       } catch (err) {
         showToast(err.message || 'Failed to update profile.', 'error');

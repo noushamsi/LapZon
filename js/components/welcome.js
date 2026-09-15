@@ -19,7 +19,7 @@ import { openAuthModal } from './authModal.js';
 import { showToast, trigger3DRefresh } from '../app.js';
 
 export async function renderWelcomePage(container) {
-  const user = auth.getUser();
+  const isAuth = auth.isAuthenticated();
 
   container.innerHTML = `
     <div class="welcome-page fade-in-section">
@@ -39,7 +39,7 @@ export async function renderWelcomePage(container) {
               </div>
               
               <h1 class="hero-main-heading">
-                Explore Premium Laptops <br/>
+                Explore Premium Used Laptops <br/>
                 <span class="hero-gradient-text">Built for Excellence</span>
               </h1>
               
@@ -53,9 +53,11 @@ export async function renderWelcomePage(container) {
                   <span>⚡ Explore Laptops</span>
                   <span class="btn-arrow">➔</span>
                 </a>
-                <button type="button" class="btn-hero-secondary" id="hero-btn-auth">
-                  <span>${user ? '👤 My Dashboard' : '🔑 Sign In'}</span>
-                </button>
+                ${!isAuth ? `
+                  <button type="button" class="btn-hero-secondary" id="hero-btn-auth">
+                    <span>🔑 Sign In</span>
+                  </button>
+                ` : ''}
               </div>
 
               <!-- Key Metrics Strip -->
@@ -106,15 +108,15 @@ export async function renderWelcomePage(container) {
           
           <div class="brands-clean-grid">
             ${[
-              { name: 'Apple', tag: 'MacBook M3 Pro & Air', icon: '🍎' },
-              { name: 'ASUS', tag: 'ROG, TUF & ZenBook', icon: '⚡' },
-              { name: 'Dell', tag: 'XPS, Alienware & Inspiron', icon: '💻' },
-              { name: 'HP', tag: 'Spectre, OMEN & Pavilion', icon: '✨' },
-              { name: 'Lenovo', tag: 'ThinkPad, Legion & Yoga', icon: '🔥' },
-              { name: 'Acer', tag: 'Predator & Swift Go', icon: '🚀' },
-              { name: 'MSI', tag: 'Raider, Stealth & Cyborg', icon: '🎯' },
-              { name: 'Samsung', tag: 'Galaxy Book4 Ultra', icon: '⭐' }
-            ].map(b => `
+      { name: 'Apple', tag: 'MacBook M3 Pro & Air', icon: '🍎' },
+      { name: 'ASUS', tag: 'ROG, TUF & ZenBook', icon: '⚡' },
+      { name: 'Dell', tag: 'XPS, Alienware & Inspiron', icon: '💻' },
+      { name: 'HP', tag: 'Spectre, OMEN & Pavilion', icon: '✨' },
+      { name: 'Lenovo', tag: 'ThinkPad, Legion & Yoga', icon: '🔥' },
+      { name: 'Acer', tag: 'Predator & Swift Go', icon: '🚀' },
+      { name: 'MSI', tag: 'Raider, Stealth & Cyborg', icon: '🎯' },
+      { name: 'Samsung', tag: 'Galaxy Book4 Ultra', icon: '⭐' }
+    ].map(b => `
               <a href="#store?brand=${encodeURIComponent(b.name)}" class="brand-clean-card hover-lift">
                 <span class="brand-icon">${b.icon}</span>
                 <span class="brand-name">${b.name}</span>
@@ -338,20 +340,108 @@ export async function renderWelcomePage(container) {
     </div>
   `;
 
-  // Attach Event Handlers
+  // Dynamic Hero Auth Button management (reactive to login / account creation / logout)
+  const updateHeroAuthButton = () => {
+    const authenticated = auth.isAuthenticated();
+    const heroBtnActions = container?.querySelector ? container.querySelector('.hero-btn-actions') : document.querySelector('.hero-btn-actions');
+    const existingAuthBtn = container?.querySelector ? container.querySelector('#hero-btn-auth') : document.getElementById('hero-btn-auth');
+
+    if (authenticated) {
+      if (existingAuthBtn) existingAuthBtn.remove();
+    } else {
+      if (!existingAuthBtn && heroBtnActions) {
+        const newBtn = document.createElement('button');
+        newBtn.type = 'button';
+        newBtn.className = 'btn-hero-secondary';
+        newBtn.id = 'hero-btn-auth';
+        newBtn.innerHTML = '<span>🔑 Sign In</span>';
+        newBtn.addEventListener('click', () => {
+          openAuthModal('login', { redirectHash: '#welcome' });
+        });
+        heroBtnActions.appendChild(newBtn);
+      }
+    }
+  };
+
   const authCtaBtn = container?.querySelector ? container.querySelector('#hero-btn-auth') : document.getElementById('hero-btn-auth');
   if (authCtaBtn) {
     authCtaBtn.addEventListener('click', () => {
-      if (auth.isAuthenticated()) {
-        window.location.hash = auth.isAdmin() ? '#admin' : '#user-dashboard';
-      } else {
-        openAuthModal('login', { redirectHash: '#user-dashboard' });
+      openAuthModal('login', { redirectHash: '#welcome' });
+    });
+  }
+
+  // Once user clicks "⚡ Explore Laptops", if not signed in, prompt sign in modal
+  const exploreCtaBtn = container?.querySelector ? container.querySelector('#hero-btn-explore') : document.getElementById('hero-btn-explore');
+  if (exploreCtaBtn) {
+    exploreCtaBtn.addEventListener('click', (e) => {
+      if (!auth.isAuthenticated()) {
+        e.preventDefault();
+        showToast('Please sign in to explore laptops 💻', 'info');
+        openAuthModal('login', {
+          returnHash: '#store',
+          redirectHash: '#store',
+          subtitle: 'Please sign in or create an account to explore our laptop collection'
+        });
       }
     });
   }
 
+  // Handle "View All Laptops ➔" link
+  const viewAllBtn = container?.querySelector ? container.querySelector('.featured-laptops-section a[href="#store"]') : null;
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', (e) => {
+      if (!auth.isAuthenticated()) {
+        e.preventDefault();
+        showToast('Please sign in to explore laptops 💻', 'info');
+        openAuthModal('login', {
+          returnHash: '#store',
+          redirectHash: '#store',
+          subtitle: 'Please sign in or create an account to explore our laptop collection'
+        });
+      }
+    });
+  }
+
+  // Handle brand strip cards
+  const brandCards = container?.querySelectorAll ? container.querySelectorAll('.brands-clean-grid a') : [];
+  brandCards.forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (!auth.isAuthenticated()) {
+        e.preventDefault();
+        const targetHash = card.getAttribute('href') || '#store';
+        showToast('Please sign in to explore laptops 💻', 'info');
+        openAuthModal('login', {
+          returnHash: targetHash,
+          redirectHash: targetHash,
+          subtitle: 'Please sign in or create an account to explore our laptop collection'
+        });
+      }
+    });
+  });
+
+  // Subscribe so when login or logout occurs, the hero button updates dynamically
+  auth.subscribe(updateHeroAuthButton);
+
+  // Re-render featured laptops when customer market / region changes
+  window.addEventListener('lapkart:region-changed', () => {
+    loadFeaturedProducts(container);
+  });
+
   // Load and render Featured Products in the grid
   loadFeaturedProducts(container);
+}
+
+function formatAmazonStars(rating) {
+  const r = Math.round(Number(rating) || 4.5);
+  return '★'.repeat(Math.min(5, Math.max(1, r))) + '☆'.repeat(Math.max(0, 5 - Math.min(5, Math.max(1, r))));
+}
+
+function getAmazonDeliveryDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 3);
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
 async function loadFeaturedProducts(container) {
@@ -359,84 +449,83 @@ async function loadFeaturedProducts(container) {
   if (!grid) return;
 
   try {
-    const res = await api.getProducts();
-    const products = (res.products || res || []).slice(0, 8); // Top 8 featured laptops
+    const activeMarket = state.getActiveMarket();
+    const res = await api.getProducts({ market: activeMarket });
+    const rawProducts = res.products || res || [];
+    const products = state.filterProductsByMarket(rawProducts, activeMarket).slice(0, 8); // Top 8 featured laptops for this market
 
     if (!products.length) {
       grid.innerHTML = `<p style="text-align: center; color: #64748b; grid-column: 1/-1;">No laptops available at the moment.</p>`;
       return;
     }
 
+    const deliveryDateStr = getAmazonDeliveryDate();
+
     grid.innerHTML = products.map(p => {
-      const discountPct = p.originalPrice > p.price 
+      const discountPct = p.originalPrice > p.price
         ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
-        : 18;
-      const originalPrice = p.originalPrice || Math.round(p.price * 1.22);
+        : (p.discount || 14);
+      const originalPrice = p.originalPrice || Math.round(p.price * 1.18);
       const isWishlisted = state.getWishlist().includes(p.id);
+      const bankOffer = activeMarket === 'UAE' 
+        ? 'Flat AED 200 Off on Select Bank Cards' 
+        : 'Flat INR 10000 Off on SBI Cards';
 
       return `
-        <div class="product-modern-card" data-id="${p.id}" style="position: relative;">
+        <div class="product-amazon-card" data-id="${p.id}">
           <!-- Wishlist Button -->
           <button 
             type="button" 
             class="welcome-wishlist-btn ${isWishlisted ? 'active' : ''}" 
             data-id="${p.id}"
             title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}"
-            style="position: absolute; top: 12px; right: 12px; z-index: 5; background: #ffffff; border: 1.5px solid #e2e8f0; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform 0.2s ease;"
           >
             ${isWishlisted ? '❤️' : '🤍'}
           </button>
 
-          <!-- Top Badge -->
-          <span class="card-badge-top">⭐ ${p.brand}</span>
-
           <!-- Laptop Image -->
-          <a href="#product/${p.id}" class="card-image-wrap">
+          <a href="#product/${p.id}" class="card-amazon-img-wrap">
             <img 
               src="${p.image}" 
               alt="${p.name}" 
-              class="card-laptop-img" 
+              class="card-amazon-img" 
               loading="lazy" 
             />
           </a>
 
           <!-- Details -->
-          <div class="card-info-wrap">
-            <div class="card-rating-row">
-              <span class="rating-pill">${p.rating || 4.8} ★</span>
-              <span class="reviews-count">(${p.reviewsCount || p.reviews?.length || 42} reviews)</span>
-              <span class="stock-status-pill">In Stock</span>
-            </div>
-
-            <a href="#product/${p.id}" class="card-title-link">
-              <h3 class="card-laptop-title" title="${p.name}">${p.name}</h3>
+          <div class="card-amazon-info">
+            <a href="#product/${p.id}" class="card-amazon-title-link">
+              <h3 class="card-amazon-title" title="${p.name}">${p.name}</h3>
             </a>
 
-            <!-- Key Specs Chips -->
-            <div class="card-specs-chips">
-              <span class="spec-chip">${p.ram || '16GB RAM'}</span>
-              <span class="spec-chip">${p.storage || '512GB SSD'}</span>
-              <span class="spec-chip">${p.processor ? p.processor.split(' ')[0] : 'Intel/M-Series'}</span>
+            <!-- Rating Row -->
+            <div class="card-amazon-rating-row">
+              <span class="amazon-rating-num">${p.rating || 4.8}</span>
+              <span class="amazon-stars">${formatAmazonStars(p.rating || 4.8)}</span>
+              <span class="amazon-rating-count">(${p.reviewsCount || p.reviews?.length || 73})</span>
             </div>
+            <div class="card-amazon-bought">${p.boughtCount || '50+'} bought in past month</div>
 
-            <!-- Pricing Row -->
-            <div class="card-pricing-row">
-              <div class="price-stack">
-                <span class="price-current">₹${p.price.toLocaleString('en-IN')}</span>
-                <span class="price-original">₹${originalPrice.toLocaleString('en-IN')}</span>
+            <!-- Price Block -->
+            <div class="card-amazon-price-block">
+              <div class="card-amazon-main-price">${state.formatPrice(p.price)}</div>
+              <div class="card-amazon-mrp-row">
+                M.R.P.: <span class="card-amazon-mrp-val">${state.formatPrice(originalPrice)}</span> 
+                <span class="card-amazon-discount">(${discountPct}% off)</span>
               </div>
+              <div class="card-amazon-bank-offer">${bankOffer}</div>
             </div>
 
-            <!-- Card Actions -->
-            <div class="card-actions-row">
-              <button type="button" class="btn-card-cart btn-add-cart-action" data-id="${p.id}">
-                🛒 Add to Cart
-              </button>
-              <button type="button" class="btn-card-buy btn-buy-now-action" data-id="${p.id}">
-                ⚡ Buy Now
-              </button>
+            <!-- Delivery Info -->
+            <div class="card-amazon-delivery">
+              FREE delivery <strong>${deliveryDateStr}</strong>
             </div>
 
+            <!-- Add to Cart Action Button -->
+            <button type="button" class="btn-amazon-add-cart btn-add-cart-action" data-id="${p.id}">
+              Add to cart
+            </button>
           </div>
         </div>
       `;
@@ -488,7 +577,7 @@ async function loadFeaturedProducts(container) {
         const pId = btn.dataset.id;
         const prod = products.find(item => item.id === pId);
         const added = state.toggleWishlist(pId);
-        api.toggleWishlist(pId).catch(() => {});
+        api.toggleWishlist(pId).catch(() => { });
         showToast(added ? `Added "${prod?.name || 'Laptop'}" to Wishlist! ❤️` : `Removed from Wishlist.`, 'info');
         btn.innerHTML = added ? '❤️' : '🤍';
         btn.title = added ? 'Remove from Wishlist' : 'Add to Wishlist';

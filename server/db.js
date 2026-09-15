@@ -589,10 +589,38 @@ class JsonDb {
     }
   }
 
-  // --- USERS ---
-  getUserByEmail(email) {
+  getUserByGoogleId(googleId) {
+    if (!googleId) return null;
     const db = this.readDb();
-    return db.users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+    const str = String(googleId).trim();
+    return (db.users || []).find(u => u.googleId && String(u.googleId).trim() === str) || null;
+  }
+
+  getUserByEmail(email) {
+    if (!email) return null;
+    const db = this.readDb();
+    return db.users.find(u => u.email && u.email.toLowerCase() === String(email).trim().toLowerCase()) || null;
+  }
+
+  getUserByPhone(phone) {
+    if (!phone) return null;
+    const cleanDigits = String(phone).replace(/\D/g, '');
+    if (!cleanDigits) return null;
+    const db = this.readDb();
+    return db.users.find(u => {
+      if (!u.phone) return false;
+      const uDigits = String(u.phone).replace(/\D/g, '');
+      return uDigits === cleanDigits || (cleanDigits.length >= 7 && (uDigits.endsWith(cleanDigits) || cleanDigits.endsWith(uDigits)));
+    }) || null;
+  }
+
+  getUserByEmailOrPhone(identifier) {
+    if (!identifier) return null;
+    const str = String(identifier).trim();
+    if (str.includes('@')) {
+      return this.getUserByEmail(str);
+    }
+    return this.getUserByPhone(str) || this.getUserByEmail(str);
   }
 
   getUserById(id) {
@@ -613,11 +641,25 @@ class JsonDb {
     return newUser;
   }
 
-  // --- PRODUCTS ---
-  // Returns only approved laptops for public user store
-  getApprovedProducts() {
+  updateUser(id, updates) {
     const db = this.readDb();
-    return (db.products || []).filter(p => p.status === 'approved');
+    const idx = db.users.findIndex(u => u.id === id);
+    if (idx === -1) return null;
+    db.users[idx] = { ...db.users[idx], ...updates };
+    this.writeDb(db);
+    return db.users[idx];
+  }
+
+  // --- PRODUCTS ---
+  // Returns only approved laptops for public user store (optionally filtered by market)
+  getApprovedProducts(market = null) {
+    const db = this.readDb();
+    let products = (db.products || []).filter(p => p.status === 'approved');
+    if (market) {
+      const tm = market.toLowerCase();
+      products = products.filter(p => (p.market || (p.currency === 'AED' ? 'UAE' : 'India')).toLowerCase() === tm);
+    }
+    return products;
   }
 
   // Returns all products including pending drafts for Admin
@@ -633,6 +675,8 @@ class JsonDb {
 
   createProduct(productData, status = 'pending') {
     const db = this.readDb();
+    const market = productData.market === 'UAE' ? 'UAE' : 'India';
+    const currency = productData.currency || (market === 'UAE' ? 'AED' : 'INR');
     const newProduct = {
       id: `lap-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
       rating: 4.5,
@@ -641,7 +685,9 @@ class JsonDb {
       isDealOfTheDay: false,
       tag: status === 'approved' ? 'New Arrival' : 'Pending Review',
       status, // 'approved' or 'pending'
-      ...productData
+      ...productData,
+      market,
+      currency
     };
     db.products.unshift(newProduct);
     this.writeDb(db);
@@ -712,11 +758,14 @@ class JsonDb {
     });
   }
 
-  createOrder({ userId, customer, items, pricing, paymentMethod }) {
+  createOrder({ userId, customer, items, pricing, paymentMethod, market, currency }) {
     const db = this.readDb();
     const randomDigits = Math.floor(10000000 + Math.random() * 90000000);
     const orderId = `OD-LK-${randomDigits}`;
     const now = new Date();
+
+    const orderCurrency = currency || pricing?.currency || (customer?.country === 'AE' ? 'AED' : 'INR');
+    const orderMarket = market || (orderCurrency === 'AED' ? 'UAE' : 'India');
 
     const expectedDelivery = new Date();
     expectedDelivery.setDate(expectedDelivery.getDate() + 3);
@@ -733,7 +782,12 @@ class JsonDb {
       createdAt: now.toISOString(),
       customer: customerObj,
       items,
-      pricing,
+      market: orderMarket,
+      currency: orderCurrency,
+      pricing: {
+        currency: orderCurrency,
+        ...(pricing || {})
+      },
       paymentMethod: paymentMethod || 'Cash on Delivery',
       paymentStatus: 'Pending (Cash on Delivery)',
       status: 'Waiting for Admin Confirmation',

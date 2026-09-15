@@ -6,12 +6,17 @@
  */
 
 import { api } from '../services/api.js';
+import { state } from '../state.js';
+import { auth } from '../services/auth.js';
 import { LAPTOP_PRESET_IMAGES } from '../data.js';
 import { showToast } from '../app.js';
 
 const ORDER_STAGES = ["Waiting for Admin Confirmation", "Order Confirmed", "Packed", "Shipped", "In Transit", "Out for Delivery", "Delivered"];
 
 export async function renderAdminDashboard(container, queryParams = {}) {
+  container = container || (typeof document !== 'undefined' ? document.getElementById('main-content') : null);
+  if (!container) return;
+
   let activeTab = queryParams.tab || 'orders'; // 'orders' | 'inventory' | 'drafts' | 'returns' | 'reviews' | 'support' | 'add-product'
   let metrics = { totalRevenue: 0, totalOrders: 0, activeShipments: 0, totalProducts: 0, pendingApprovals: 0, outOfStockCount: 0 };
   let products = [];
@@ -20,13 +25,14 @@ export async function renderAdminDashboard(container, queryParams = {}) {
   let reviews = [];
   let tickets = [];
   let isLoading = true;
+  let inventoryMarketFilter = 'all';
 
   let uploadedImagesList = [
     { url: LAPTOP_PRESET_IMAGES[0].url, label: "Front View (Main Display)" }
   ];
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   function formatDate(isoStr) {
@@ -123,14 +129,6 @@ export async function renderAdminDashboard(container, queryParams = {}) {
     container.innerHTML = `
       <div class="admin-portal fade-in-section">
         <div class="container">
-          <!-- Clean Page Back Navigation Button -->
-          <div class="page-back-nav-container">
-            <button type="button" class="btn-page-back" id="btn-admin-back" title="Back to Store">
-              <span class="back-arrow-icon">←</span>
-              <span>Back to Store</span>
-            </button>
-          </div>
-
           <!-- Top Header Strip -->
           <div class="admin-header-strip">
             <div class="admin-header-title">
@@ -140,9 +138,12 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                 <p>Quality Products, Trusted Service • Product approvals, live order dispatch & inventory control</p>
               </div>
             </div>
-            <div class="admin-header-actions">
+            <div class="admin-header-actions" style="display: flex; gap: 8px; align-items: center;">
               <button type="button" class="btn btn-outline" id="btn-reset-demo" style="color: #fff; border-color: rgba(255,255,255,0.3);" title="Reset initial sample data">
                 🔄 Reset Demo Data
+              </button>
+              <button type="button" class="btn btn-outline" id="btn-admin-logout" style="color: #fca5a5; border-color: rgba(239,68,68,0.5); font-weight: 700;" title="Sign out of admin portal">
+                🚪 Sign Out
               </button>
             </div>
           </div>
@@ -336,8 +337,21 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
           <!-- TAB 2: LIVE PRODUCT INVENTORY -->
           <div class="admin-panel ${activeTab === 'inventory' ? 'active' : ''}" id="panel-inventory">
-            <div class="panel-header-action">
-              <h3>Live Laptop Products in Store (${liveProducts.length})</h3>
+            <div class="panel-header-action" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h3 style="margin: 0 0 6px 0;">Live Laptop Products in Store (${liveProducts.filter(p => inventoryMarketFilter === 'all' || (p.market === 'UAE' || p.currency === 'AED' ? 'UAE' : 'India') === inventoryMarketFilter).length})</h3>
+                <div class="admin-market-filter-tabs" style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-sm ${inventoryMarketFilter === 'all' ? 'btn-primary' : 'btn-outline'} btn-filter-market" data-market="all" style="font-weight: 700; font-size: 0.78rem;">
+                    All Markets (${liveProducts.length})
+                  </button>
+                  <button type="button" class="btn btn-sm ${inventoryMarketFilter === 'India' ? 'btn-primary' : 'btn-outline'} btn-filter-market" data-market="India" style="font-weight: 700; font-size: 0.78rem;">
+                    🇮🇳 India (${liveProducts.filter(p => p.market !== 'UAE' && p.currency !== 'AED').length})
+                  </button>
+                  <button type="button" class="btn btn-sm ${inventoryMarketFilter === 'UAE' ? 'btn-primary' : 'btn-outline'} btn-filter-market" data-market="UAE" style="font-weight: 700; font-size: 0.78rem;">
+                    🇦🇪 UAE (${liveProducts.filter(p => p.market === 'UAE' || p.currency === 'AED').length})
+                  </button>
+                </div>
+              </div>
               <button type="button" class="btn btn-primary btn-sm" id="btn-goto-add">
                 ➕ Add New Laptop
               </button>
@@ -348,6 +362,7 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                 <thead>
                   <tr>
                     <th>Laptop Name & Brand</th>
+                    <th>Market & Currency</th>
                     <th>Category</th>
                     <th>Key Specs (CPU / RAM / SSD)</th>
                     <th>Price (MRP / Selling)</th>
@@ -357,7 +372,14 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${liveProducts.map(prod => `
+                  ${liveProducts
+                    .filter(p => inventoryMarketFilter === 'all' || (p.market === 'UAE' || p.currency === 'AED' ? 'UAE' : 'India') === inventoryMarketFilter)
+                    .map(prod => {
+                      const isUAE = prod.market === 'UAE' || prod.currency === 'AED';
+                      const nativePrice = isUAE ? `AED ${Number(prod.price).toLocaleString('en-AE')}` : `₹${Number(prod.price).toLocaleString('en-IN')}`;
+                      const nativeMrp = isUAE ? `AED ${Number(prod.mrp).toLocaleString('en-AE')}` : `₹${Number(prod.mrp).toLocaleString('en-IN')}`;
+
+                      return `
                     <tr data-product-id="${prod.id}">
                       <td>
                         <div class="tbl-product-cell">
@@ -367,6 +389,18 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                             <div class="tbl-product-brand">${prod.brand} • ${prod.series || 'Series'}</div>
                           </div>
                         </div>
+                      </td>
+
+                      <td>
+                        ${isUAE ? `
+                          <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 800; border: 1px solid #fde68a; font-size: 0.76rem; padding: 4px 8px; border-radius: 6px;">
+                            🇦🇪 UAE (AED)
+                          </span>
+                        ` : `
+                          <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; border: 1px solid #bae6fd; font-size: 0.76rem; padding: 4px 8px; border-radius: 6px;">
+                            🇮🇳 India (INR)
+                          </span>
+                        `}
                       </td>
 
                       <td>
@@ -381,8 +415,8 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                       </td>
 
                       <td>
-                        <div style="font-weight: 700; color: var(--text-main);">${formatPrice(prod.price)}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); text-decoration: line-through;">${formatPrice(prod.mrp)}</div>
+                        <div style="font-weight: 800; color: var(--text-main); font-size: 0.95rem;">${nativePrice}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-decoration: line-through;">${nativeMrp}</div>
                         <div style="font-size: 0.75rem; color: var(--accent-emerald); font-weight: 700;">${prod.discount}% off</div>
                       </td>
 
@@ -417,7 +451,8 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                         </button>
                       </td>
                     </tr>
-                  `).join('')}
+                  `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>
@@ -721,13 +756,8 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                   </div>
 
                   <div class="form-group">
-                    <label for="new-lap-graphics">Graphics Card <span class="req">*</span></label>
-                    <input type="text" id="new-lap-graphics" placeholder="e.g. NVIDIA GeForce RTX 4060 8GB" required />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="new-lap-display">Display <span class="req">*</span></label>
-                    <input type="text" id="new-lap-display" placeholder="e.g. 14-inch 2.8K 120Hz OLED (2880x1800)" required />
+                    <label for="new-lap-display">Display & Screen Size <span class="req">*</span></label>
+                    <input type="text" id="new-lap-display" placeholder="e.g. 15.6-inch FHD (1920x1080) / 14-inch OLED" required />
                   </div>
 
                   <div class="form-group">
@@ -735,13 +765,32 @@ export async function renderAdminDashboard(container, queryParams = {}) {
                     <input type="text" id="new-lap-os" placeholder="e.g. Windows 11 Home" value="Windows 11 Home" />
                   </div>
 
+                  <div class="form-group full-width">
+                    <label for="new-lap-in-the-box">In The Box</label>
+                    <input type="text" id="new-lap-in-the-box" placeholder="e.g. Laptop, Power Adapter, Charging Cable, User Manual, Warranty Card" value="Laptop, Power Adapter, Charging Cable, User Manual, Warranty Card" />
+                  </div>
+
+                  <!-- Target Market & Currency Selection -->
+                  <div class="form-group" style="grid-column: 1 / -1; background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 10px; padding: 14px 16px;">
+                    <label for="new-lap-market" style="font-weight: 800; font-size: 0.95rem; color: #9a3412; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                      <span>🌐 Target Market & Currency</span> <span class="req">*</span>
+                    </label>
+                    <select id="new-lap-market" required style="font-weight: 700; font-size: 0.95rem; border: 2px solid #ea580c; background: #ffffff; padding: 10px 14px; border-radius: 8px; width: 100%; color: #0f172a;">
+                      <option value="India" selected>🇮🇳 India (INR ₹) — Enter prices directly in Indian Rupees</option>
+                      <option value="UAE">🇦🇪 UAE (AED د.إ) — Enter prices directly in UAE Dirhams</option>
+                    </select>
+                    <small style="color: #64748b; font-size: 0.8rem; margin-top: 6px; display: block; font-weight: 500;">
+                      💡 <strong>Dedicated Market Pricing</strong>: Price is stored exactly as entered with NO currency conversion. India customers only see India listings; UAE customers only see UAE listings. You can add the same laptop model separately for both markets.
+                    </small>
+                  </div>
+
                   <div class="form-group">
-                    <label for="new-lap-mrp">Original MRP (₹) <span class="req">*</span></label>
+                    <label for="new-lap-mrp" id="new-lap-mrp-label">Original MRP (₹) <span class="req">*</span></label>
                     <input type="number" id="new-lap-mrp" placeholder="e.g. 99990" required />
                   </div>
 
                   <div class="form-group">
-                    <label for="new-lap-price">Selling Price (₹) <span class="req">*</span></label>
+                    <label for="new-lap-price" id="new-lap-price-label">Selling Price (₹) <span class="req">*</span></label>
                     <input type="number" id="new-lap-price" placeholder="e.g. 79990" required />
                   </div>
 
@@ -1037,12 +1086,14 @@ export async function renderAdminDashboard(container, queryParams = {}) {
 
     attachGallerySlotEvents();
 
-    // Back to Store navigation
-    const backBtn = container.querySelector('#btn-admin-back');
-    if (backBtn) {
-      backBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.hash = '#store';
+
+    // Admin Logout
+    const logoutBtn = container.querySelector('#btn-admin-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        auth.logout();
+        showToast('Administrator signed out.', 'info');
+        window.location.hash = '#admin-login';
       });
     }
 
@@ -1210,9 +1261,33 @@ export async function renderAdminDashboard(container, queryParams = {}) {
       });
     });
 
+    // Market Filter Buttons in Inventory Tab
+    container.querySelectorAll('.btn-filter-market').forEach(btn => {
+      btn.addEventListener('click', () => {
+        inventoryMarketFilter = btn.dataset.market || 'all';
+        render();
+      });
+    });
+
     // Add Laptop Form Handler
     const addForm = container.querySelector('#form-add-laptop');
     const submitDraftBtn = container.querySelector('#btn-submit-draft');
+    const marketSelect = container.querySelector('#new-lap-market');
+
+    if (marketSelect) {
+      marketSelect.addEventListener('change', () => {
+        const isUAE = marketSelect.value === 'UAE';
+        const mrpLabel = container.querySelector('#new-lap-mrp-label');
+        const priceLabel = container.querySelector('#new-lap-price-label');
+        const mrpInput = container.querySelector('#new-lap-mrp');
+        const priceInput = container.querySelector('#new-lap-price');
+
+        if (mrpLabel) mrpLabel.innerHTML = `Original MRP (${isUAE ? 'AED د.إ' : '₹'}) <span class="req">*</span>`;
+        if (priceLabel) priceLabel.innerHTML = `Selling Price (${isUAE ? 'AED د.إ' : '₹'}) <span class="req">*</span>`;
+        if (mrpInput) mrpInput.placeholder = isUAE ? 'e.g. 950' : 'e.g. 99990';
+        if (priceInput) priceInput.placeholder = isUAE ? 'e.g. 720' : 'e.g. 79990';
+      });
+    }
 
     if (addForm) {
       const handleCreateProduct = async (statusMode) => {
@@ -1222,9 +1297,12 @@ export async function renderAdminDashboard(container, queryParams = {}) {
         const processor = container.querySelector('#new-lap-proc').value.trim();
         const ram = container.querySelector('#new-lap-ram').value.trim();
         const storage = container.querySelector('#new-lap-storage').value.trim();
-        const graphics = container.querySelector('#new-lap-graphics').value.trim();
+        const graphics = container.querySelector('#new-lap-graphics')?.value?.trim() || 'Integrated Graphics';
         const display = container.querySelector('#new-lap-display').value.trim();
         const os = container.querySelector('#new-lap-os').value.trim() || 'Windows 11 Home';
+        const inTheBox = container.querySelector('#new-lap-in-the-box')?.value?.trim() || 'Laptop, Power Adapter, Charging Cable, User Manual, Warranty Card';
+        const market = container.querySelector('#new-lap-market')?.value || 'India';
+        const currency = market === 'UAE' ? 'AED' : 'INR';
         const mrp = Number(container.querySelector('#new-lap-mrp').value) || 0;
         const price = Number(container.querySelector('#new-lap-price').value) || 0;
         const stock = Number(container.querySelector('#new-lap-stock').value) || 10;
@@ -1251,6 +1329,9 @@ export async function renderAdminDashboard(container, queryParams = {}) {
             graphics,
             display,
             os,
+            inTheBox,
+            market,
+            currency,
             mrp,
             price,
             stock,

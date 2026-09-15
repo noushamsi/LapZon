@@ -764,53 +764,79 @@ main#main-content {
 /* Toast Notifications */
 #toast-container {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
-  z-index: 9999;
+  z-index: 999999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 400px;
+  gap: 12px;
+  max-width: 440px;
   width: calc(100vw - 48px);
   pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #toast-container {
+    top: 16px;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    align-items: center;
+  }
 }
 
 .toast {
   pointer-events: auto;
   background: #0f172a;
   color: #ffffff;
-  padding: 0.85rem 1.25rem;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-  font-size: 0.9rem;
+  padding: 0.9rem 1.3rem;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  font-size: 0.93rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  border-left: 4px solid var(--primary-orange);
-  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-left: 5px solid var(--primary-orange);
+  animation: toastSlideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
 }
 
 .toast.toast-success {
-  border-left-color: var(--accent-emerald);
+  border-left-color: #10b981;
+  background: #091e17;
+  color: #ecfdf5;
+  box-shadow: 0 16px 36px rgba(16, 185, 129, 0.18), 0 0 0 1px rgba(16, 185, 129, 0.25);
 }
 
 .toast.toast-warning {
-  border-left-color: var(--primary-orange);
+  border-left-color: #f59e0b;
 }
 
 .toast.toast-error {
-  border-left-color: var(--accent-red);
+  border-left-color: #ef4444;
 }
 
-@keyframes toastSlideIn {
+@keyframes toastSlideDown {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
   }
 }
 
@@ -1092,6 +1118,7 @@ main#main-content {
 
   /* Modals Full Fluid Responsive on Mobile */
   .modal-dialog, .auth-modal-card {
+    box-sizing: border-box !important;
     width: 94vw !important;
     max-width: 440px !important;
     margin: 1rem auto !important;

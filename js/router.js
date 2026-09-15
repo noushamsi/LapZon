@@ -16,18 +16,30 @@ import { renderSupportPage } from './components/support.js';
 import { renderLegalPage } from './components/legal.js';
 import { renderAdminDashboard } from './components/admin.js';
 import { renderAdminLogin } from './components/adminLogin.js';
-import { renderAccessDenied } from './components/accessDenied.js';
-import { handlePostAuthCompletion } from './components/authModal.js';
+import { handlePostAuthCompletion, openAuthModal, handleGoogleAuthSuccess } from './components/authModal.js';
 
 class Router {
   constructor() {
     this.mainContainer = null;
     this.previousRoute = '#welcome';
     this.currentRoute = '#welcome';
+    if (typeof window !== 'undefined') {
+      window.router = this;
+    }
+  }
+
+  getContainer() {
+    if (!this.mainContainer || (typeof document !== 'undefined' && !document.body.contains(this.mainContainer))) {
+      this.mainContainer = document.getElementById('main-content');
+    }
+    return this.mainContainer;
   }
 
   init(container) {
-    this.mainContainer = container;
+    this.mainContainer = container || (typeof document !== 'undefined' ? document.getElementById('main-content') : null);
+    if (typeof window !== 'undefined') {
+      window.router = this;
+    }
     this.currentRoute = window.location.hash || '#welcome';
     window.addEventListener('hashchange', () => {
       if (this.currentRoute !== window.location.hash) {
@@ -36,10 +48,19 @@ class Router {
       }
       this.handleRoute();
     });
+    window.addEventListener('lapkart:region-changed', () => {
+      const hash = window.location.hash || '';
+      if (!hash.startsWith('#google-callback') && !hash.startsWith('#auth-callback')) {
+        this.handleRoute();
+      }
+    });
     this.handleRoute();
   }
 
   handleRoute() {
+    const container = this.getContainer();
+    if (!container) return;
+
     const rawHash = window.location.hash.slice(1) || 'welcome';
     const [pathPart, queryPart] = rawHash.split('?');
     const queryParams = new URLSearchParams(queryPart || '');
@@ -55,20 +76,8 @@ class Router {
       const refCode = paramsObj.ref.trim();
       const currentUser = auth.getUser();
       const currentRef = currentUser ? currentUser.referralCode : null;
-      if (refCode && refCode !== currentRef && !sessionStorage.getItem(`ref_tracked_${refCode}`)) {
-        sessionStorage.setItem(`ref_tracked_${refCode}`, '1');
-        import('./services/api.js').then(({ api }) => {
-          api.registerReferral(refCode, {
-            name: currentUser?.name || 'New LapKart Visitor',
-            email: currentUser?.email || `visitor_${Math.random().toString(36).substring(2, 7)}@lapkart.com`
-          }).then(res => {
-            if (res && res.milestoneReached) {
-              import('./app.js').then(({ showToast }) => {
-                showToast(`🎉 5 Referrals Milestone Reached! 30% OFF Coupon Generated: ${res.couponCode}`, 'success');
-              });
-            }
-          }).catch(() => {});
-        });
+      if (!currentRef && refCode) {
+        sessionStorage.setItem('lapkart_referral_code', refCode);
       }
     }
 
@@ -85,17 +94,20 @@ class Router {
               id: paramsObj.id || 'usr-google',
               name: decodeURIComponent(paramsObj.name || 'Google User'),
               email: decodeURIComponent(paramsObj.email || ''),
-              role: paramsObj.role || 'user'
+              role: paramsObj.role || 'user',
+              googleId: paramsObj.googleId || null,
+              country: paramsObj.country || null,
+              currency: paramsObj.currency || null
             };
           }
         } catch (e) {
           user = { name: 'Google User', email: '', role: 'user' };
         }
-        auth.setSession(token, user);
-        import('./app.js').then(({ showToast }) => {
-          showToast(`Welcome, ${user.name}! Successfully signed in via Google 🎉`, 'success');
-        });
-        handlePostAuthCompletion(user);
+
+        if (typeof history !== 'undefined' && history.replaceState) {
+          history.replaceState(null, '', '#');
+        }
+        handleGoogleAuthSuccess(user, token);
         return;
       }
     }
@@ -110,48 +122,54 @@ class Router {
     }
 
     // Route matching with RBAC Guard
-    if (pathPart === 'welcome' || pathPart === '') {
-      renderWelcomePage(this.mainContainer);
+    if (pathPart === 'register' || pathPart === 'signup') {
+      renderWelcomePage(container);
+      openAuthModal('register');
+    } else if (pathPart === 'login' || pathPart === 'signin') {
+      renderWelcomePage(container);
+      openAuthModal('login');
+    } else if (pathPart === 'welcome' || pathPart === '') {
+      renderWelcomePage(container);
     } else if (pathPart === 'store') {
-      renderStorePage(this.mainContainer, paramsObj);
+      renderStorePage(container, paramsObj);
     } else if (pathPart.startsWith('product/')) {
       const productId = pathPart.replace('product/', '');
-      renderProductDetails(this.mainContainer, productId);
+      renderProductDetails(container, productId);
     } else if (pathPart === 'checkout-address') {
-      renderCheckoutAddress(this.mainContainer);
+      renderCheckoutAddress(container);
     } else if (pathPart === 'checkout-payment') {
-      renderCheckoutPayment(this.mainContainer);
+      renderCheckoutPayment(container);
     } else if (pathPart.startsWith('order-confirmed/')) {
       const orderId = pathPart.replace('order-confirmed/', '');
-      renderOrderConfirmed(this.mainContainer, orderId);
+      renderOrderConfirmed(container, orderId);
     } else if (pathPart.startsWith('order-tracking/') || pathPart === 'order-tracking') {
       const orderId = pathPart.startsWith('order-tracking/') ? pathPart.replace('order-tracking/', '') : paramsObj.id;
-      renderOrderTracking(this.mainContainer, orderId);
+      renderOrderTracking(container, orderId);
     } else if (pathPart === 'my-orders') {
-      renderMyOrders(this.mainContainer);
+      renderMyOrders(container);
     } else if (pathPart === 'user-dashboard') {
-      renderUserDashboard(this.mainContainer);
+      renderUserDashboard(container);
     } else if (pathPart === 'wishlist') {
-      renderWishlist(this.mainContainer);
+      renderWishlist(container);
     } else if (pathPart === 'cart') {
-      renderCartPage(this.mainContainer);
+      renderCartPage(container);
     } else if (pathPart === 'support') {
-      renderSupportPage(this.mainContainer);
+      renderSupportPage(container);
     } else if (pathPart.startsWith('legal/')) {
       const pageKey = pathPart.replace('legal/', '');
-      renderLegalPage(this.mainContainer, pageKey);
+      renderLegalPage(container, pageKey);
     } else if (pathPart === 'admin-login' || pathPart === 'owner-login') {
-      renderAdminLogin(this.mainContainer);
+      renderAdminLogin(container);
     } else if (pathPart === 'admin') {
       // 🔒 STRICT RBAC GUARD:
       if (auth.isAdmin()) {
-        renderAdminDashboard(this.mainContainer, paramsObj);
+        renderAdminDashboard(container, paramsObj);
       } else {
         // If not signed in as admin, show the Admin Login portal directly
-        renderAdminLogin(this.mainContainer);
+        renderAdminLogin(container);
       }
     } else {
-      renderWelcomePage(this.mainContainer);
+      renderWelcomePage(container);
     }
   }
 

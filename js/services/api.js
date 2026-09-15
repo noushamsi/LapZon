@@ -45,14 +45,26 @@ export async function request(endpoint, options = {}) {
 
 export const api = {
   // Auth & Profile
-  login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  register: (name, email, password) => request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
-  getGoogleConfig: () => request('/auth/google/config'),
+  login: (identifier, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, email: identifier, password }) }),
+  register: (name, email, password, phone, dialCode, confirmPassword) => request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, confirmPassword, phone, dialCode }) }),
+  sendRegisterOtp: (data) => request('/auth/send-register-otp', { method: 'POST', body: JSON.stringify(data) }),
+  verifyRegisterOtp: (data) => request('/auth/verify-register-otp', { method: 'POST', body: JSON.stringify(data) }),
+  resendRegisterOtp: (data) => request('/auth/resend-register-otp', { method: 'POST', body: JSON.stringify(data) }),
+  registerAdmin: (data) => request('/auth/admin/register', { method: 'POST', body: JSON.stringify(data) }),
+  adminForgotPassword: (email) => request('/auth/admin/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  adminResendResetOtp: (email) => request('/auth/admin/resend-reset-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  adminVerifyResetOtp: (email, otp) => request('/auth/admin/verify-reset-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  adminResetPassword: (data) => request('/auth/admin/reset-password', { method: 'POST', body: JSON.stringify(data) }),
+  getGoogleConfig: () => request(`/auth/google/config?_t=${Date.now()}`),
   verifyGoogleToken: (data) => request('/auth/google/verify-token', { method: 'POST', body: JSON.stringify(data) }),
   googleLogin: (googleData) => request('/auth/google', { method: 'POST', body: JSON.stringify(googleData) }),
   getProfile: () => request('/auth/me'),
+  setCountry: (data) => request('/auth/set-country', { method: 'POST', body: JSON.stringify(data) }),
   updateProfile: (data) => request('/user/profile', { method: 'PUT', body: JSON.stringify(data) }),
-  resetPassword: (email, newPassword) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, newPassword }) }),
+  forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resendResetOtp: (email) => request('/auth/resend-reset-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyResetOtp: (email, otp) => request('/auth/verify-reset-otp', { method: 'POST', body: JSON.stringify({ email, otp }) }),
+  resetPassword: (data) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
 
   // User Saved Addresses
   getUserAddresses: () => request('/user/addresses'),
@@ -64,7 +76,10 @@ export const api = {
   toggleWishlist: (productId) => request('/wishlist/toggle', { method: 'POST', body: JSON.stringify({ productId }) }),
 
   // Products (User view - approved only)
-  getProducts: () => request('/products'),
+  getProducts: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/products${q ? `?${q}` : ''}`);
+  },
   getProductById: (id) => request(`/products/${id}`),
 
   // Reviews & Ratings

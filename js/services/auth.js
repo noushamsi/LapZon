@@ -3,6 +3,8 @@
  * Manages JWT tokens, user roles, login state, and role checks.
  */
 
+import { state } from '../state.js';
+
 const CUST_TOKEN_KEY = 'lapkart_customer_token_v4';
 const CUST_USER_KEY = 'lapkart_customer_user_v4';
 const ADMIN_TOKEN_KEY = 'lapkart_admin_token_v4';
@@ -132,18 +134,58 @@ class AuthService {
     } else {
       safeStorage.setItem(CUST_TOKEN_KEY, token);
       safeStorage.setItem(CUST_USER_KEY, JSON.stringify(user));
+      if (user && user.country) {
+        state.setRegion(user.country);
+      }
+    }
+    this.notify();
+  }
+
+  setUser(user) {
+    if (user && user.role === 'admin') {
+      safeStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
+    } else {
+      safeStorage.setItem(CUST_USER_KEY, JSON.stringify(user));
+      if (user && user.country) {
+        state.setRegion(user.country);
+      }
+    }
+    this.notify();
+  }
+
+  setToken(token) {
+    if (this.isInAdminContext()) {
+      safeStorage.setItem(ADMIN_TOKEN_KEY, token);
+    } else {
+      safeStorage.setItem(CUST_TOKEN_KEY, token);
     }
     this.notify();
   }
 
   logout() {
-    if (this.isInAdminContext()) {
-      safeStorage.removeItem(ADMIN_TOKEN_KEY);
-      safeStorage.removeItem(ADMIN_USER_KEY);
-    } else {
-      safeStorage.removeItem(CUST_TOKEN_KEY);
-      safeStorage.removeItem(CUST_USER_KEY);
+    // Critical: Disable Google Identity Services automatic account selection on Sign Out
+    try {
+      if (typeof window !== 'undefined' && window.google && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.disableAutoSelect();
+      }
+    } catch (e) {
+      console.warn('Could not disable Google auto-select:', e);
     }
+
+    safeStorage.removeItem(ADMIN_TOKEN_KEY);
+    safeStorage.removeItem(ADMIN_USER_KEY);
+    safeStorage.removeItem(CUST_TOKEN_KEY);
+    safeStorage.removeItem(CUST_USER_KEY);
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('lapzon_pending_auth_action');
+        sessionStorage.removeItem('lapkart_referral_code');
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('lapzon_pending_auth_action');
+        localStorage.removeItem('lapkart_referral_code');
+      }
+    } catch {}
     this.notify();
   }
 }

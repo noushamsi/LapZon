@@ -12,8 +12,8 @@ import { showToast, trigger3DRefresh } from '../app.js';
 import { openAuthModal } from './authModal.js';
 import { openReviewModal } from './reviewModal.js';
 
-function formatPrice(val) {
-  return '₹' + Number(val || 0).toLocaleString('en-IN');
+function formatPrice(val, currency = null) {
+  return state.formatPrice(val, currency);
 }
 
 export async function renderProductDetails(container, productId) {
@@ -34,6 +34,11 @@ export async function renderProductDetails(container, productId) {
   } catch {
     product = state.getProductById(productId);
     allProducts = state.getProducts() || [];
+  }
+
+  if (product) {
+    const prodMarket = product.market || (product.currency === 'AED' ? 'UAE' : 'India');
+    allProducts = allProducts.filter(p => (p.market || (p.currency === 'AED' ? 'UAE' : 'India')) === prodMarket);
   }
 
   if (!product) {
@@ -206,7 +211,7 @@ export async function renderProductDetails(container, productId) {
                 <span class="pdp-mrp-price">${formatPrice(product.mrp || product.price)}</span>
                 <span class="pdp-discount-badge">${product.discount || 0}% off</span>
               </div>
-              <div class="pdp-inclusive-tax">+ ₹0 Packaging Fee • Cash on Delivery Available</div>
+              <div class="pdp-inclusive-tax">+ Free Packaging Fee • Cash on Delivery Available</div>
             </div>
 
             <!-- Quantity Selector & Real-Time Total Amount Calculation -->
@@ -231,9 +236,6 @@ export async function renderProductDetails(container, productId) {
                     </span>
                     <div id="pdp-calc-total-price" style="font-size: 1.75rem; font-weight: 900; color: #ff6b00; line-height: 1.1;">
                       ${formatPrice(product.price)}
-                    </div>
-                    <div id="pdp-price-calc-summary" style="font-size: 0.85rem; color: #475569; font-weight: 700; margin-top: 4px;">
-                      (${formatPrice(product.price)} × 1 unit)
                     </div>
                   </div>
                 </div>
@@ -314,16 +316,8 @@ export async function renderProductDetails(container, productId) {
                     <td class="spec-value"><strong>${product.battery || 'All-Day Battery Backup with Fast Charging'}</strong></td>
                   </tr>
                   <tr>
-                    <td class="spec-label">Device Weight</td>
-                    <td class="spec-value"><strong>${product.weight || '1.65 kg'}</strong></td>
-                  </tr>
-                  <tr>
                     <td class="spec-label">In The Box</td>
-                    <td class="spec-value">Laptop, Power Adapter, Charging Cable, User Manual, Warranty Card</td>
-                  </tr>
-                  <tr>
-                    <td class="spec-label">Warranty Summary</td>
-                    <td class="spec-value"><strong style="color: var(--accent-emerald);">1 Year Onsite Manufacturer Warranty + 7 Days Free Replacement</strong></td>
+                    <td class="spec-value">${product.inTheBox || 'Laptop, Power Adapter, Charging Cable, User Manual, Warranty Card'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -523,7 +517,6 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
   function updateQtyDisplay() {
     const qtyDisplay = container.querySelector('#pdp-qty-display');
     const calcTotal = container.querySelector('#pdp-calc-total-price');
-    const summaryEl = container.querySelector('#pdp-price-calc-summary');
     const stockLimitNote = container.querySelector('#pdp-stock-limit-note');
     const minusBtn = container.querySelector('#pdp-qty-minus');
     const plusBtn = container.querySelector('#pdp-qty-plus');
@@ -531,11 +524,7 @@ function attachProductDetailsEvents(container, product, images, userRefCode) {
     if (qtyDisplay) qtyDisplay.textContent = currentQty;
     
     const totalPrice = unitPrice * currentQty;
-    if (calcTotal) calcTotal.textContent = formatPrice(totalPrice);
-
-    if (summaryEl) {
-      summaryEl.textContent = `(${formatPrice(unitPrice)} × ${currentQty} ${currentQty === 1 ? 'unit' : 'units'})`;
-    }
+    if (calcTotal) calcTotal.textContent = formatPrice(totalPrice, product.currency);
 
     if (minusBtn) {
       minusBtn.style.opacity = currentQty <= 1 ? '0.35' : '1';

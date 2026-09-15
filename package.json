@@ -10,8 +10,12 @@
     "test": "node scratch/test_backend_api.js"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.0",
+    "puppeteer-core": "^25.10.0"
   }
 }

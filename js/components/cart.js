@@ -96,8 +96,8 @@ export function renderCartContents() {
     titleEl.textContent = `Shopping Cart (${totals.itemsCount})`;
   }
 
-  function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+  function formatPrice(val, curr = null) {
+    return state.formatPrice(val, curr);
   }
 
   if (cart.length === 0) {
@@ -106,12 +106,23 @@ export function renderCartContents() {
         <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛒💨</div>
         <h4 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Your Cart is Empty</h4>
         <p style="font-size: 0.85rem; margin-bottom: 1.5rem;">Explore our high-performance laptop catalog and grab exclusive deals!</p>
-        <a href="#store" class="btn btn-primary" onclick="document.getElementById('cart-drawer-overlay').classList.remove('active')">
+        <a href="#store" id="cart-drawer-explore-btn" class="btn btn-primary" onclick="document.getElementById('cart-drawer-overlay').classList.remove('active')">
           Explore Laptops
         </a>
       </div>
     `;
     footerContainer.innerHTML = '';
+    itemsContainer.querySelector('#cart-drawer-explore-btn')?.addEventListener('click', (e) => {
+      if (!auth.isAuthenticated()) {
+        e.preventDefault();
+        showToast('Please sign in to explore laptops 💻', 'info');
+        openAuthModal('login', {
+          returnHash: '#store',
+          redirectHash: '#store',
+          subtitle: 'Please sign in or create an account to explore our laptop collection'
+        });
+      }
+    });
     return;
   }
 
@@ -122,8 +133,8 @@ export function renderCartContents() {
         <span class="cart-item-name">${item.name}</span>
         <span class="cart-item-specs">${item.specsSummary}</span>
         <div class="cart-item-price-row">
-          <strong style="font-size: 1.05rem;">${formatPrice(item.price)}</strong>
-          <span style="font-size: 0.8rem; color: var(--text-muted); text-decoration: line-through;">${formatPrice(item.mrp)}</span>
+          <strong style="font-size: 1.05rem;">${formatPrice(item.price, item.currency)}</strong>
+          <span style="font-size: 0.8rem; color: var(--text-muted); text-decoration: line-through;">${formatPrice(item.mrp, item.currency)}</span>
           <span style="font-size: 0.8rem; color: var(--accent-emerald); font-weight: 700;">${item.discount}% off</span>
         </div>
         <div class="cart-item-qty-ctrl">
@@ -235,7 +246,7 @@ function attachCartEvents() {
           if (code === 'LAPTOP5000') {
             appliedCoupon = 'LAPTOP5000';
             couponDiscount = 5000;
-            showToast('Coupon LAPTOP5000 applied! ₹5,000 Saved.', 'success');
+            showToast(`Coupon LAPTOP5000 applied! ${state.formatPrice(5000)} Saved.`, 'success');
             renderCartContents();
           } else {
             showToast('Invalid Coupon code!', 'error');
@@ -280,7 +291,7 @@ export function renderCartPage(container) {
   const totals = state.getCartTotals(couponDiscount);
 
   function formatPrice(val) {
-    return '₹' + Number(val).toLocaleString('en-IN');
+    return state.formatPrice(val);
   }
 
   if (cart.length === 0) {
@@ -301,7 +312,7 @@ export function renderCartPage(container) {
             <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 2rem; max-width: 450px; margin-left: auto; margin-right: auto;">
               Explore our wide collection of flagship gaming, creator, and ultrabook laptops with exclusive brand deals!
             </p>
-            <a href="#store" class="btn btn-orange btn-lg" style="padding: 0.85rem 2.5rem; font-weight: 800; font-size: 1.05rem;">
+            <a href="#store" id="cart-page-explore-btn" class="btn btn-orange btn-lg" style="padding: 0.85rem 2.5rem; font-weight: 800; font-size: 1.05rem;">
               ⚡ Explore Laptops Catalog
             </a>
           </div>
@@ -312,6 +323,18 @@ export function renderCartPage(container) {
     container.querySelector('#btn-cart-page-back')?.addEventListener('click', () => {
       if (window.history.length > 1) window.history.back();
       else window.location.hash = '#store';
+    });
+
+    container.querySelector('#cart-page-explore-btn')?.addEventListener('click', (e) => {
+      if (!auth.isAuthenticated()) {
+        e.preventDefault();
+        showToast('Please sign in to explore laptops 💻', 'info');
+        openAuthModal('login', {
+          returnHash: '#store',
+          redirectHash: '#store',
+          subtitle: 'Please sign in or create an account to explore our laptop collection'
+        });
+      }
     });
     return;
   }
@@ -548,7 +571,7 @@ function attachBigCartEvents(container) {
         if (code === 'LAPTOP5000') {
           appliedCoupon = 'LAPTOP5000';
           couponDiscount = 5000;
-          showToast('Coupon LAPTOP5000 applied! ₹5,000 Saved.', 'success');
+          showToast(`Coupon LAPTOP5000 applied! ${state.formatPrice(5000)} Saved.`, 'success');
           renderCartPage(container);
         } else {
           showToast('Invalid Coupon code!', 'error');

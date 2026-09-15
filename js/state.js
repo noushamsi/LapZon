@@ -14,6 +14,42 @@ const safeStorage = {
   clear: () => typeof localStorage !== 'undefined' ? localStorage.clear() : Object.keys(memoryStorage).forEach(k => delete memoryStorage[k])
 };
 
+export const REGIONS = {
+  IN: {
+    code: 'IN',
+    name: 'India',
+    flag: '🇮🇳',
+    dialCode: '+91',
+    currency: 'INR',
+    symbol: '₹',
+    currencyName: 'Indian Rupee (₹)',
+    currencySubtext: 'INR',
+    exchangeRate: 1,
+    minFilterPrice: 30000,
+    maxFilterPrice: 250000,
+    filterStep: 5000,
+    phoneLength: 10,
+    placeholderPhone: 'Enter 10-digit mobile number',
+    phoneErrorMessage: 'Enter a valid 10-digit Indian mobile number.'
+  },
+  AE: {
+    code: 'AE',
+    name: 'United Arab Emirates',
+    flag: '🇦🇪',
+    dialCode: '+971',
+    currency: 'AED',
+    symbol: 'AED ',
+    currencyName: 'UAE Dirham (AED)',
+    currencySubtext: 'Dirhams',
+    minFilterPrice: 500,
+    maxFilterPrice: 10000,
+    filterStep: 100,
+    phoneLength: 9,
+    placeholderPhone: 'Enter 9-digit mobile number',
+    phoneErrorMessage: 'Enter a valid 9-digit UAE mobile number.'
+  }
+};
+
 const STORAGE_KEYS = {
   PRODUCTS: 'lapkart_products_v2',
   DRAFTS: 'lapkart_admin_drafts_v2',
@@ -21,7 +57,9 @@ const STORAGE_KEYS = {
   ORDERS: 'lapkart_orders_v2',
   ADDRESSES: 'lapkart_addresses_v2',
   ACTIVE_ADDRESS: 'lapkart_active_address_v2',
-  WISHLIST: 'lapkart_wishlist_v2'
+  WISHLIST: 'lapkart_wishlist_v2',
+  REGION: 'lapkart_region_v2',
+  PHONE: 'lapkart_user_phone_v2'
 };
 
 class StateStore {
@@ -49,6 +87,9 @@ class StateStore {
     }
     if (!safeStorage.getItem(STORAGE_KEYS.WISHLIST)) {
       this.setWishlist([]);
+    }
+    if (!safeStorage.getItem(STORAGE_KEYS.REGION)) {
+      safeStorage.setItem(STORAGE_KEYS.REGION, 'IN');
     }
   }
 
@@ -214,7 +255,15 @@ class StateStore {
     const defaultImg = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80';
     const prodImg = (product.image && product.image.trim()) ? product.image : defaultImg;
 
-    const cart = this.getCart();
+    const prodMarket = product.market || (product.currency === 'AED' ? 'UAE' : 'India');
+    const prodCurrency = product.currency || (prodMarket === 'UAE' ? 'AED' : 'INR');
+
+    let cart = this.getCart();
+    // Do not mix India and UAE items in the same cart
+    if (cart.some(item => item.market && item.market !== prodMarket)) {
+      cart = [];
+    }
+
     const existingIndex = cart.findIndex(item => item.id === productId);
 
     if (existingIndex !== -1) {
@@ -233,6 +282,8 @@ class StateStore {
         mrp: Number(product.mrp || product.price),
         discount: Number(product.discount || 0),
         specsSummary: `${product.processor || ''} | ${product.ram || ''} | ${product.storage || ''}`,
+        market: prodMarket,
+        currency: prodCurrency,
         quantity: qtyToAdd
       });
     }
@@ -540,6 +591,99 @@ class StateStore {
 
     this.setOrders(orders);
     return order;
+  }
+
+  // --- REGION, CURRENCY & PHONE NUMBER SYSTEM ---
+  getRegionCode() {
+    const code = safeStorage.getItem(STORAGE_KEYS.REGION);
+    return code === 'AE' ? 'AE' : 'IN';
+  }
+
+  getRegion() {
+    const code = this.getRegionCode();
+    return REGIONS[code] || REGIONS.IN;
+  }
+
+  setRegion(countryCode, phoneNumber = '') {
+    const str = String(countryCode || '').trim().toUpperCase();
+    const code = (str === 'AE' || str === 'UAE' || str.includes('EMIRATES') || str === 'AED') ? 'AE' : 'IN';
+    const oldCode = safeStorage.getItem(STORAGE_KEYS.REGION);
+    safeStorage.setItem(STORAGE_KEYS.REGION, code);
+    if (phoneNumber) {
+      this.setPhone(phoneNumber);
+    }
+    const regionObj = REGIONS[code];
+    if (oldCode !== code) {
+      this.notify('region', regionObj);
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent('lapkart:region-changed', { detail: regionObj }));
+      }
+    }
+    return regionObj;
+  }
+
+  getPhone() {
+    return '';
+  }
+
+  setPhone(phoneNumber) {
+    // Ephemeral notify only - do not persist old phone across registrations
+    this.notify('phone', phoneNumber || '');
+  }
+
+  /**
+   * Automatically detect country and update currency based on input phone number.
+   * If phone number starts with +971, 00971, 971 or user selected UAE -> sets UAE (AED)
+   * If phone number starts with +91, 0091, 91 or user selected India -> sets India (INR)
+   */
+  setRegionFromPhone(rawPhone = '', fallbackCountry = '') {
+    const clean = String(rawPhone || '').replace(/[\s\-\(\)]/g, '').trim();
+    let targetCountry = fallbackCountry || 'IN';
+
+    if (clean.startsWith('+971') || clean.startsWith('00971') || clean.startsWith('971')) {
+      targetCountry = 'AE';
+    } else if (clean.startsWith('+91') || clean.startsWith('0091') || clean.startsWith('91')) {
+      targetCountry = 'IN';
+    } else if (fallbackCountry === 'AE' || fallbackCountry === 'IN') {
+      targetCountry = fallbackCountry;
+    }
+
+    this.setRegion(targetCountry, rawPhone);
+    return this.getRegion();
+  }
+
+  convertPrice(amount) {
+    return Math.round(Number(amount || 0));
+  }
+
+  formatPrice(amount, currency) {
+    const num = Math.round(Number(amount || 0));
+    const curr = currency || (this.getRegion().code === 'AE' ? 'AED' : 'INR');
+    if (curr === 'AED') {
+      return `AED ${num.toLocaleString('en-AE')}`;
+    }
+    return `₹${num.toLocaleString('en-IN')}`;
+  }
+
+  getActiveMarket() {
+    const region = this.getRegion();
+    return region.code === 'AE' ? 'UAE' : 'India';
+  }
+
+  filterProductsByMarket(products = [], targetMarket = null) {
+    const market = (targetMarket || this.getActiveMarket()).toLowerCase();
+    return products.filter(p => {
+      const pMarket = (p.market || (p.currency === 'AED' ? 'UAE' : 'India')).toLowerCase();
+      return pMarket === market;
+    });
+  }
+
+  getCurrencySymbol() {
+    return this.getRegion().symbol;
+  }
+
+  getCurrencyCode() {
+    return this.getRegion().currency;
   }
 
   // Reset entire application to initial demo state

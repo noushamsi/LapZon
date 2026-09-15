@@ -21,6 +21,9 @@ export function renderNavbar() {
   const cart = state.getCart();
   const cartCount = cart.reduce((sum, i) => sum + i.quantity, 0);
 
+  const currentRegion = state.getRegion();
+  const currentPhone = state.getPhone();
+
   let headerHtml = '';
 
   if (isAdminRoute) {
@@ -79,7 +82,7 @@ export function renderNavbar() {
           <div class="ribbon-tagline">
             <span>⚡ LapZon: Quality Products, Trusted Service</span>
             <span style="opacity: 0.75; margin: 0 4px;">•</span>
-            <span>📞 Enquiry: <a href="tel:8123019785" style="color: #fff; font-weight: 800; text-decoration: underline;">8123019785</a></span>
+            <span>📞 Helpline: <a href="tel:8123019785" style="color: #fff; font-weight: 800; text-decoration: underline;">8123019785</a></span>
             <span style="opacity: 0.75; margin: 0 4px;">•</span>
             <span>✉️ <a href="mailto:noushamsi09@gmail.com" style="color: #fff; font-weight: 700;">noushamsi09@gmail.com</a></span>
           </div>
@@ -242,6 +245,15 @@ export function renderNavbar() {
               <div style="font-size: 0.75rem; color: #64748b;">${user.email}</div>
             </div>
           ` : ''}
+
+          <!-- Currency Tile in Drawer (read-only based on customer phone) -->
+          <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 0.65rem 0.85rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.72rem; font-weight: 700; color: #9a3412; text-transform: uppercase;">Store Currency</div>
+            <div style="font-weight: 800; font-size: 0.85rem; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+              <span>${currentRegion.flag}</span>
+              <span>${currentRegion.code === 'IN' ? '₹ INR (India)' : 'AED (UAE)'}</span>
+            </div>
+          </div>
 
           <a href="#welcome" class="mobile-nav-link ${currentHash === '#welcome' ? 'active' : ''}">
             🏠 Home & Deals
@@ -520,11 +532,226 @@ function attachNavbarEvents() {
       window.location.hash = '#admin-login';
     });
   }
+
+  // Region / Currency Selector Modal Triggers
+  document.querySelectorAll('.btn-trigger-region-modal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openRegionModal();
+    });
+  });
+}
+
+/**
+ * Interactive Dual-Country (India 🇮🇳 / UAE 🇦🇪) & Phone Number Currency Modal
+ */
+export function openRegionModal() {
+  const currentRegion = state.getRegion();
+  const currentPhone = state.getPhone();
+  let selectedCountry = currentRegion.code; // 'IN' | 'AE'
+  let phoneInputValue = currentPhone || '';
+
+  let modalOverlay = document.getElementById('region-modal-overlay');
+  if (!modalOverlay) {
+    modalOverlay = document.createElement('div');
+    modalOverlay.id = 'region-modal-overlay';
+    modalOverlay.className = 'auth-modal-overlay';
+    modalOverlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 2500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    `;
+    document.body.appendChild(modalOverlay);
+  }
+
+  function renderRegionModal() {
+    const isIndia = selectedCountry === 'IN';
+    const flag = isIndia ? '🇮🇳' : '🇦🇪';
+    const dialCode = isIndia ? '+91' : '+971';
+    const currencyName = isIndia ? 'Indian Rupee (₹ INR)' : 'UAE Dirham (AED د.إ)';
+    const placeholder = isIndia ? '9876543210' : '501234567';
+
+    modalOverlay.innerHTML = `
+      <div class="region-modal-card" style="background: #ffffff; border-radius: 18px; width: 100%; max-width: 450px; box-shadow: 0 25px 60px rgba(0,0,0,0.3); overflow: hidden; position: relative; padding: 2.25rem 2rem; border: 1.5px solid #fed7aa; animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+        
+        <!-- Close Button -->
+        <button type="button" id="btn-close-region-modal" style="position: absolute; top: 16px; right: 16px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; transition: all 0.2s ease;" aria-label="Close modal">✕</button>
+
+        <!-- Header -->
+        <div style="margin-bottom: 1.35rem;">
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: #fff7ed; border: 1px solid #ffedd5; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 800; color: #ea580c; margin-bottom: 0.5rem;">
+            <span>🌐</span> <span>Multi-Country & Currency Selector</span>
+          </div>
+          <h2 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0 0 0.35rem;">
+            Select Region & Phone Number
+          </h2>
+          <p style="font-size: 0.84rem; color: #64748b; margin: 0; line-height: 1.45;">
+            Enter your mobile number or select your region below. Laptop prices will automatically convert to your local currency!
+          </p>
+        </div>
+
+        <!-- Country Option Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.25rem;">
+          <!-- India Option -->
+          <div id="card-opt-india" style="border: 2px solid ${isIndia ? '#ff6b00' : '#e2e8f0'}; background: ${isIndia ? '#fff7ed' : '#ffffff'}; border-radius: 12px; padding: 0.9rem 0.75rem; text-align: center; cursor: pointer; transition: all 0.2s ease; box-shadow: ${isIndia ? '0 4px 12px rgba(255,107,0,0.15)' : 'none'};">
+            <div style="font-size: 2rem; margin-bottom: 0.25rem;">🇮🇳</div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a;">India</div>
+            <div style="font-size: 0.76rem; font-weight: 800; color: ${isIndia ? '#ea580c' : '#64748b'}; margin-top: 3px;">
+              +91 • ₹ Rupees (INR)
+            </div>
+          </div>
+
+          <!-- UAE Option -->
+          <div id="card-opt-uae" style="border: 2px solid ${!isIndia ? '#ff6b00' : '#e2e8f0'}; background: ${!isIndia ? '#fff7ed' : '#ffffff'}; border-radius: 12px; padding: 0.9rem 0.75rem; text-align: center; cursor: pointer; transition: all 0.2s ease; box-shadow: ${!isIndia ? '0 4px 12px rgba(255,107,0,0.15)' : 'none'};">
+            <div style="font-size: 2rem; margin-bottom: 0.25rem;">🇦🇪</div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a;">UAE</div>
+            <div style="font-size: 0.76rem; font-weight: 800; color: ${!isIndia ? '#ea580c' : '#64748b'}; margin-top: 3px;">
+              +971 • AED Dirhams (1=26.5₹)
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone Number Input with Dial Prefix -->
+        <form id="region-country-phone-form">
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">
+              Mobile Number <span style="font-weight: 500; color: #64748b;">(Auto-detects +91 or +971)</span>
+            </label>
+            <div style="display: flex; gap: 8px;">
+              <select id="modal-dial-prefix" style="padding: 0.75rem 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-weight: 800; font-size: 0.88rem; background: #f8fafc; cursor: pointer; color: #0f172a;">
+                <option value="IN" ${isIndia ? 'selected' : ''}>🇮🇳 +91 (India)</option>
+                <option value="AE" ${!isIndia ? 'selected' : ''}>🇦🇪 +971 (UAE)</option>
+              </select>
+              <input 
+                type="tel" 
+                id="modal-phone-input" 
+                value="${phoneInputValue}" 
+                placeholder="${placeholder}" 
+                style="flex: 1; padding: 0.75rem 0.85rem; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-weight: 600;" 
+              />
+            </div>
+          </div>
+
+          <!-- Live Currency Indicator -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 0.85rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: #334155; display: flex; align-items: flex-start; gap: 8px;">
+            <span style="font-size: 1.2rem; line-height: 1;">⚡</span>
+            <div>
+              <div style="font-weight: 800; color: #0f172a;">Active Store Currency: ${currencyName}</div>
+              <div style="color: #64748b; font-size: 0.78rem; margin-top: 2px;">
+                ${isIndia 
+                  ? '🇮🇳 Indian number detected: All laptop prices, discounts, and invoices will be displayed in Indian Rupees (₹).' 
+                  : '🇦🇪 UAE number detected: All laptop prices, discounts, and invoices will be converted to UAE Dirhams (1 AED = 26.5 INR).'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-orange btn-block" style="width: 100%; padding: 0.85rem; border-radius: 8px; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 12px rgba(255,107,0,0.25);">
+            Apply & View Laptop Prices in ${isIndia ? '₹ Rupees' : 'AED Dirhams'} ➔
+          </button>
+        </form>
+      </div>
+    `;
+
+    // Internal listeners
+    const closeBtn = document.getElementById('btn-close-region-modal');
+    closeBtn?.addEventListener('click', closeRegionModal);
+
+    modalOverlay.onclick = (e) => {
+      if (e.target === modalOverlay) closeRegionModal();
+    };
+
+    const inCard = document.getElementById('card-opt-india');
+    const aeCard = document.getElementById('card-opt-uae');
+    const prefixSelect = document.getElementById('modal-dial-prefix');
+    const phoneInput = document.getElementById('modal-phone-input');
+
+    inCard?.addEventListener('click', () => {
+      selectedCountry = 'IN';
+      renderRegionModal();
+    });
+
+    aeCard?.addEventListener('click', () => {
+      selectedCountry = 'AE';
+      renderRegionModal();
+    });
+
+    prefixSelect?.addEventListener('change', (e) => {
+      selectedCountry = e.target.value;
+      renderRegionModal();
+    });
+
+    phoneInput?.addEventListener('input', (e) => {
+      phoneInputValue = e.target.value;
+      const clean = phoneInputValue.replace(/[\s\-\(\)]/g, '');
+      if (clean.startsWith('+971') || clean.startsWith('00971') || clean.startsWith('971')) {
+        if (selectedCountry !== 'AE') {
+          selectedCountry = 'AE';
+          renderRegionModal();
+        }
+      } else if (clean.startsWith('+91') || clean.startsWith('0091') || clean.startsWith('91')) {
+        if (selectedCountry !== 'IN') {
+          selectedCountry = 'IN';
+          renderRegionModal();
+        }
+      }
+    });
+
+    const form = document.getElementById('region-country-phone-form');
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+      const updatedRegion = state.setRegionFromPhone(phoneVal, selectedCountry);
+
+      closeRegionModal();
+      showToast(
+        updatedRegion.code === 'AE' 
+          ? '🇦🇪 UAE Region Applied! Laptop prices are now shown in UAE Dirhams (AED).' 
+          : '🇮🇳 India Region Applied! Laptop prices are now shown in Indian Rupees (₹).',
+        'success'
+      );
+
+      // Re-render navbar and active route page
+      renderNavbar();
+      window.dispatchEvent(new CustomEvent('lapkart:region-changed', { detail: updatedRegion }));
+      window.dispatchEvent(new CustomEvent('hashchange'));
+    });
+  }
+
+  renderRegionModal();
+
+  setTimeout(() => {
+    modalOverlay.style.opacity = '1';
+    document.body.style.overflow = 'hidden';
+  }, 10);
+}
+
+export function closeRegionModal() {
+  const modalOverlay = document.getElementById('region-modal-overlay');
+  if (modalOverlay) {
+    modalOverlay.style.opacity = '0';
+    setTimeout(() => {
+      modalOverlay.remove();
+      document.body.style.overflow = '';
+    }, 250);
+  }
 }
 
 // Reactively re-render navbar when auth state changes or hash changes
 if (typeof window !== 'undefined') {
   window.addEventListener('hashchange', () => {
+    renderNavbar();
+  });
+  window.addEventListener('lapkart:region-changed', () => {
     renderNavbar();
   });
 }
@@ -552,3 +779,4 @@ state.subscribe('cart', (cart) => {
     }
   }
 });
+
