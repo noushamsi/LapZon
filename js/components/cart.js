@@ -360,7 +360,7 @@ export function renderCartPage(container) {
         </div>
 
         <!-- Big Cart Grid Layout (70% Items / 30% Summary) -->
-        <div style="display: grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start;">
+        <div class="big-cart-grid">
           
           <!-- Left Column: Big Cart Items List -->
           <div style="display: flex; flex-direction: column; gap: 1.25rem;" id="big-cart-items-list">

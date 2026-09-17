@@ -3,7 +3,7 @@
  * Tests full customer and admin lifecycles against the active server.
  */
 
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = 'http://127.0.0.1:8081';
 
 async function runTests() {
   console.log('🚀 Starting LapKart Plus Full-Stack Automated Test Suite...\n');

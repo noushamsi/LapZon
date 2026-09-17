@@ -58,7 +58,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Enable trust proxy for Render / Cloud load balancers
@@ -1147,7 +1147,7 @@ function getGoogleRedirectUri(req) {
   }
 
   // 4. Fallback for local development
-  const port = process.env.PORT || 8080;
+  const port = process.env.PORT || 8081;
   return `http://localhost:${port}/api/auth/google/callback`;
 }
 

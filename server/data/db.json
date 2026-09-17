@@ -1220,7 +1220,7 @@
       "rating": 4.5,
       "reviewsCount": 178,
       "boughtCount": "200+",
-      "stock": 20,
+      "stock": 17,
       "inStock": true,
       "tag": "Value King"
     },
@@ -1679,6 +1679,276 @@
     }
   ],
   "orders": [
+    {
+      "orderId": "OD-LK-64233340",
+      "userId": "usr-cust-01",
+      "createdAt": "2026-09-17T15:55:00.812Z",
+      "customer": {
+        "fullName": "Rahul Sharma",
+        "phone": "9876543210",
+        "houseNo": "Flat 402, Sunshine Heights",
+        "street": "MG Road, Indiranagar",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560001",
+        "addressType": "Home",
+        "userId": "usr-cust-01",
+        "email": "customer@gmail.com"
+      },
+      "items": [
+        {
+          "id": "lap-004",
+          "name": "HP Pavilion Aero 13 AMD Ryzen 7",
+          "price": 74990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "AMD Ryzen 7 8840U (8-core, 16-thread) | 16GB"
+        }
+      ],
+      "market": "India",
+      "currency": "INR",
+      "pricing": {
+        "currency": "INR",
+        "subtotal": 74990,
+        "shippingFee": 0,
+        "discountAmount": 0,
+        "totalAmount": 74990
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Pending (Cash on Delivery)",
+      "status": "Order Confirmed",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-19581196IN",
+        "currentLocation": "LapKart National Fulfillment Hub, Electronic City, Bengaluru",
+        "expectedDate": "2026-09-20",
+        "deliveredAt": null
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-09-17T15:55:00.812Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-09-17T15:55:01.603Z",
+          "completed": true,
+          "note": "Admin approval and inventory reservation pending."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": null,
+          "completed": false,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": null,
+          "completed": false,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": null,
+          "completed": false,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ]
+    },
+    {
+      "orderId": "OD-LK-38068901",
+      "userId": "usr-cust-01",
+      "createdAt": "2026-09-17T15:31:13.165Z",
+      "customer": {
+        "fullName": "Rahul Sharma",
+        "phone": "9876543210",
+        "houseNo": "Flat 402, Sunshine Heights",
+        "street": "MG Road, Indiranagar",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560001",
+        "addressType": "Home",
+        "userId": "usr-cust-01",
+        "email": "customer@gmail.com"
+      },
+      "items": [
+        {
+          "id": "lap-004",
+          "name": "HP Pavilion Aero 13 AMD Ryzen 7",
+          "price": 74990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "AMD Ryzen 7 8840U (8-core, 16-thread) | 16GB"
+        }
+      ],
+      "market": "India",
+      "currency": "INR",
+      "pricing": {
+        "currency": "INR",
+        "subtotal": 74990,
+        "shippingFee": 0,
+        "discountAmount": 0,
+        "totalAmount": 74990
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Pending (Cash on Delivery)",
+      "status": "Order Confirmed",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-57228894IN",
+        "currentLocation": "LapKart National Fulfillment Hub, Electronic City, Bengaluru",
+        "expectedDate": "2026-09-20",
+        "deliveredAt": null
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-09-17T15:31:13.165Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-09-17T15:31:14.183Z",
+          "completed": true,
+          "note": "Admin approval and inventory reservation pending."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": null,
+          "completed": false,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": null,
+          "completed": false,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": null,
+          "completed": false,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ]
+    },
+    {
+      "orderId": "OD-LK-71659440",
+      "userId": "usr-cust-01",
+      "createdAt": "2026-09-17T15:30:27.237Z",
+      "customer": {
+        "fullName": "Rahul Sharma",
+        "phone": "9876543210",
+        "houseNo": "Flat 402, Sunshine Heights",
+        "street": "MG Road, Indiranagar",
+        "city": "Bengaluru",
+        "state": "Karnataka",
+        "pinCode": "560001",
+        "addressType": "Home",
+        "userId": "usr-cust-01",
+        "email": "customer@gmail.com"
+      },
+      "items": [
+        {
+          "id": "lap-004",
+          "name": "HP Pavilion Aero 13 AMD Ryzen 7",
+          "price": 74990,
+          "quantity": 1,
+          "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80",
+          "specsSummary": "AMD Ryzen 7 8840U (8-core, 16-thread) | 16GB"
+        }
+      ],
+      "market": "India",
+      "currency": "INR",
+      "pricing": {
+        "currency": "INR",
+        "subtotal": 74990,
+        "shippingFee": 0,
+        "discountAmount": 0,
+        "totalAmount": 74990
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Pending (Cash on Delivery)",
+      "status": "Order Confirmed",
+      "deliveryDetails": {
+        "courierPartner": "Ekart Express Logistics",
+        "trackingNumber": "EK-EXP-96579407IN",
+        "currentLocation": "LapKart National Fulfillment Hub, Electronic City, Bengaluru",
+        "expectedDate": "2026-09-20",
+        "deliveredAt": null
+      },
+      "timeline": [
+        {
+          "stage": "Order Placed",
+          "timestamp": "2026-09-17T15:30:27.237Z",
+          "completed": true,
+          "note": "Order placed successfully. Waiting for store administrator approval."
+        },
+        {
+          "stage": "Order Confirmed",
+          "timestamp": "2026-09-17T15:30:28.025Z",
+          "completed": true,
+          "note": "Admin approval and inventory reservation pending."
+        },
+        {
+          "stage": "Packed",
+          "timestamp": null,
+          "completed": false,
+          "note": "Anti-static bubble packaging and seal inspection."
+        },
+        {
+          "stage": "Shipped",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to Ekart Express Courier partner."
+        },
+        {
+          "stage": "In Transit",
+          "timestamp": null,
+          "completed": false,
+          "note": "Highway air cargo express to destination hub."
+        },
+        {
+          "stage": "Out for Delivery",
+          "timestamp": null,
+          "completed": false,
+          "note": "Delivery agent assigned with OTP verification."
+        },
+        {
+          "stage": "Delivered",
+          "timestamp": null,
+          "completed": false,
+          "note": "Handover to customer with cash collection & open-box verification."
+        }
+      ]
+    },
     {
       "orderId": "OD-LK-29585858",
       "userId": null,
@@ -11253,6 +11523,48 @@
   ],
   "addresses": [
     {
+      "id": "addr-1789660500315-psqv",
+      "userId": "usr-cust-01",
+      "isDefault": false,
+      "createdAt": "2026-09-17T15:55:00.315Z",
+      "fullName": "Rahul Sharma",
+      "phone": "9876543210",
+      "houseNo": "Flat 402, Sunshine Heights",
+      "street": "MG Road, Indiranagar",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560001",
+      "addressType": "Home"
+    },
+    {
+      "id": "addr-1789659072552-rneb",
+      "userId": "usr-cust-01",
+      "isDefault": false,
+      "createdAt": "2026-09-17T15:31:12.552Z",
+      "fullName": "Rahul Sharma",
+      "phone": "9876543210",
+      "houseNo": "Flat 402, Sunshine Heights",
+      "street": "MG Road, Indiranagar",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560001",
+      "addressType": "Home"
+    },
+    {
+      "id": "addr-1789659026739-wnge",
+      "userId": "usr-cust-01",
+      "isDefault": true,
+      "createdAt": "2026-09-17T15:30:26.739Z",
+      "fullName": "Rahul Sharma",
+      "phone": "9876543210",
+      "houseNo": "Flat 402, Sunshine Heights",
+      "street": "MG Road, Indiranagar",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pinCode": "560001",
+      "addressType": "Home"
+    },
+    {
       "id": "addr-1788863369314-0cdy",
       "userId": "usr-mtsj18qt-137b",
       "isDefault": true,
@@ -12075,6 +12387,9 @@
     ],
     "usr-mtsj18qt-137b": [
       "lap-003"
+    ],
+    "usr-cust-01": [
+      "lap-004"
     ]
   },
   "reviews": [

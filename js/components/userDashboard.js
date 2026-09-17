@@ -243,7 +243,7 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
               </div>
 
               <!-- Item Snapshot -->
-              <div style="display: grid; grid-template-columns: 100px 1fr auto; gap: 1.25rem; align-items: center;">
+              <div class="user-order-item-grid">
                 <img src="${item.image || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=300&q=80'}" alt="${item.name || 'Laptop'}" style="width: 100px; height: 75px; object-fit: contain; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;" />
                 
                 <div>
@@ -261,7 +261,7 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
               </div>
 
               <!-- Delivery Address Strip -->
-              <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem 1rem; margin-top: 1.25rem; font-size: 0.82rem; color: #475569; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="background: #f8fafc; border-radius: 8px; padding: 0.75rem 1rem; margin-top: 1.25rem; font-size: 0.82rem; color: #475569; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; word-break: break-word;">
                 <div>
                   📍 Deliver to: <strong>${order.customer?.fullName || 'Customer'}</strong> (${order.customer?.phone || ''}) - ${order.customer?.houseNo || ''}, ${order.customer?.street || ''}, ${order.customer?.city || ''}, ${order.customer?.state || ''} - <strong>${order.customer?.pinCode || ''}</strong>
                 </div>
@@ -319,7 +319,7 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
     return `
       <div>
         <h3 style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 1.5rem;">Saved Wishlist (${items.length})</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 1.25rem;">
           ${items.map(p => `
             <div style="background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
               <div>
@@ -362,7 +362,7 @@ function renderActiveTabContent({ activeTab, orders, addresses, wishlist, refDat
             <button type="button" class="btn btn-primary" id="btn-empty-add-address">+ Add Delivery Address</button>
           </div>
         ` : `
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 1.25rem;">
             ${addresses.map(a => `
               <div style="background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                 <div>

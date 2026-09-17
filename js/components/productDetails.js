@@ -463,9 +463,9 @@ export async function renderProductDetails(container, productId) {
 
         <div class="form-group" style="margin-bottom: 1.25rem;">
           <label>Your Unique Referral / Share Link:</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <input type="text" id="share-link-input" readonly value="${window.location.origin}/#store?ref=${userRefCode}" style="font-size: 0.85rem; background: var(--bg-subtle);" />
-            <button type="button" class="btn btn-primary" id="btn-copy-share-link" style="white-space: nowrap;">
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="text" id="share-link-input" readonly value="${window.location.origin}/#store?ref=${userRefCode}" style="flex: 1; min-width: 180px; font-size: 0.85rem; background: var(--bg-subtle);" />
+            <button type="button" class="btn btn-primary" id="btn-copy-share-link" style="white-space: nowrap; flex-shrink: 0;">
               📋 Copy Link
             </button>
           </div>

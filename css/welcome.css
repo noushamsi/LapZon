@@ -320,25 +320,29 @@
 
 .featured-products-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 1200px) {
   .featured-products-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 860px) {
   .featured-products-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
   }
 }
 
 @media (max-width: 520px) {
   .featured-products-grid {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
   }
 }
 
@@ -354,6 +358,8 @@
   position: relative;
   transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
   box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .product-amazon-card:hover {
@@ -1129,6 +1135,21 @@
 
   .card-actions-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .categories-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+  .hero-stats-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .brands-clean-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
   }
 }
 
