@@ -1127,7 +1127,12 @@ function getGoogleRedirectUri(req) {
   }
 
   const host = req ? (req.get('x-forwarded-host') || req.get('host')) : null;
-  const isReqLocal = !host || host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  const isReqLocal = !host || 
+    host.startsWith('localhost') || 
+    host.startsWith('127.') || 
+    host.startsWith('[::1]') || 
+    host.startsWith('::1') || 
+    host.startsWith('0.0.0.0');
 
   // 1. If an explicit production redirect URI is configured, use it
   if (envUri && !envUri.includes('localhost')) {
@@ -1261,16 +1266,25 @@ app.get('/api/auth/google/callback', async (req, res) => {
 
         const tokenData = await tokenRes.json();
         if (tokenData.access_token) {
-          const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: `Bearer ${tokenData.access_token}` }
-          });
-          if (userInfoRes.ok) {
-            googleUser = await userInfoRes.json();
+          try {
+            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${tokenData.access_token}` }
+            });
+            if (userInfoRes.ok) {
+              googleUser = await userInfoRes.json();
+            }
+          } catch (uiErr) {
+            console.warn('Google userinfo fetch warning:', uiErr.message);
           }
-        } else if (tokenData.id_token) {
+        }
+        if ((!googleUser || !googleUser.email) && tokenData.id_token) {
           const parts = tokenData.id_token.split('.');
           if (parts[1]) {
-            googleUser = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+            try {
+              googleUser = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+            } catch (jwtErr) {
+              console.warn('Google id_token JWT decode warning:', jwtErr.message);
+            }
           }
         }
       } catch (tokenErr) {
@@ -1292,27 +1306,35 @@ app.get('/api/auth/google/callback', async (req, res) => {
       }
     }
 
+    const authenticatedGoogleEmail = (googleUser.email || '').trim().toLowerCase();
     const googleId = googleUser.sub || googleUser.id || null;
+    const googleName = googleUser.name || (authenticatedGoogleEmail ? authenticatedGoogleEmail.split('@')[0] : 'Google User');
 
-    // Find or automatically create user in database using Google verified unique ID (sub)
+    // Find or automatically create user in database using Google verified unique ID (sub) or email
     let user = null;
     if (googleId) {
       user = db.getUserByGoogleId(googleId);
     }
-    if (!user && googleUser.email) {
-      user = db.getUserByEmail(googleUser.email);
+    if (!user && authenticatedGoogleEmail) {
+      user = db.getUserByEmail(authenticatedGoogleEmail);
       if (user && !user.googleId && googleId) {
         user.googleId = googleId;
         db.updateUser(user.id, { googleId });
       }
     }
 
+    // Ensure the authenticated Google email is stored on the user record
+    if (user && authenticatedGoogleEmail && user.email !== authenticatedGoogleEmail) {
+      user.email = authenticatedGoogleEmail;
+      db.updateUser(user.id, { email: authenticatedGoogleEmail });
+    }
+
     let isNewUser = false;
     if (!user) {
       isNewUser = true;
       user = db.createUser({
-        name: googleUser.name || (googleUser.email ? googleUser.email.split('@')[0] : 'Google User'),
-        email: (googleUser.email || '').toLowerCase(),
+        name: googleName,
+        email: authenticatedGoogleEmail,
         password: 'GOOGLE_OAUTH_OIDC_USER',
         googleId: googleId,
         role: 'user',
@@ -1326,11 +1348,29 @@ app.get('/api/auth/google/callback', async (req, res) => {
       });
     }
 
-    // Asynchronously dispatch Successful Login notification email to user's login email
-    if (user.email) {
-      sendLoginSuccessEmail(user).catch(err => {
-        console.error('[Email Notification] Google login success email dispatch error:', err.message);
-      });
+    // Automatically send login-success email to the exact authenticated Google account email
+    const emailToDispatch = authenticatedGoogleEmail || (user && user.email) || '';
+    if (emailToDispatch) {
+      const emailUserPayload = {
+        ...user,
+        name: user.name || googleName || 'Customer',
+        email: emailToDispatch
+      };
+
+      console.log(`[Google OAuth Callback] Automatically sending login-success email to ${emailToDispatch}...`);
+      sendLoginSuccessEmail(emailUserPayload)
+        .then(result => {
+          if (result && !result.success) {
+            console.error(`[Email Notification] Google login success email failed to send to ${emailToDispatch}:`, result.error);
+          } else {
+            console.log(`[Email Notification] ✓ Google login-success email successfully sent to ${emailToDispatch}`);
+          }
+        })
+        .catch(err => {
+          console.error('[Email Notification] Google login success email dispatch exception:', err.message);
+        });
+    } else {
+      console.warn('[Google OAuth Callback] ⚠️ Could not determine Google email for login confirmation email dispatch.');
     }
 
     const token = generateToken(user);
@@ -1425,10 +1465,21 @@ app.post('/api/auth/google/verify-token', async (req, res) => {
       });
     }
 
-    // Asynchronously dispatch Successful Login notification email to user's login email
-    if (user.email) {
-      sendLoginSuccessEmail(user).catch(err => {
-        console.error('[Email Notification] Google login success email dispatch error:', err.message);
+    // Automatically dispatch Successful Login notification email to the verified Google email
+    const emailToDispatch = userEmail || (user && user.email) || '';
+    if (emailToDispatch) {
+      sendLoginSuccessEmail({
+        ...user,
+        name: user.name || userName || 'Customer',
+        email: emailToDispatch
+      }).then(result => {
+        if (result && !result.success) {
+          console.error(`[Email Notification] Google verify-token login success email failed to send to ${emailToDispatch}:`, result.error);
+        } else {
+          console.log(`[Email Notification] ✓ Google verify-token login success email sent to ${emailToDispatch}`);
+        }
+      }).catch(err => {
+        console.error('[Email Notification] Google verify-token login success email dispatch error:', err.message);
       });
     }
 
@@ -1498,9 +1549,20 @@ app.post('/api/auth/google', (req, res) => {
     });
   }
 
-  // Asynchronously dispatch Successful Login notification email to user's login email
-  if (user.email) {
-    sendLoginSuccessEmail(user).catch(err => {
+  // Automatically dispatch Successful Login notification email to the authenticated Google email
+  const emailToDispatch = cleanEmail || (user && user.email) || '';
+  if (emailToDispatch) {
+    sendLoginSuccessEmail({
+      ...user,
+      name: user.name || name || 'Customer',
+      email: emailToDispatch
+    }).then(result => {
+      if (result && !result.success) {
+        console.error(`[Email Notification] Direct Google auth login success email failed to send to ${emailToDispatch}:`, result.error);
+      } else {
+        console.log(`[Email Notification] ✓ Direct Google auth login success email sent to ${emailToDispatch}`);
+      }
+    }).catch(err => {
       console.error('[Email Notification] Google login success email dispatch error:', err.message);
     });
   }

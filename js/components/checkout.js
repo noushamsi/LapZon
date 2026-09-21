@@ -24,14 +24,23 @@ export async function renderCheckoutAddress(container) {
   let addresses = [];
   try {
     const res = await api.getUserAddresses();
-    if (res && res.addresses) {
+    if (res && res.addresses && res.addresses.length > 0) {
       addresses = res.addresses;
+      state.setAddresses(addresses);
+    } else {
+      addresses = state.getAddresses();
     }
   } catch {
     addresses = state.getAddresses();
   }
 
-  let activeAddress = addresses.length > 0 ? addresses[0] : null;
+  // Preserve previously selected address if it exists in the address list,
+  // or default to the first saved address
+  const currentActive = state.getActiveAddress();
+  let activeAddress = (currentActive && addresses.find(a => a.id === currentActive.id)) || (addresses.length > 0 ? addresses[0] : null);
+  if (activeAddress) {
+    state.setActiveAddress(activeAddress);
+  }
   let showNewForm = addresses.length === 0;
 
   function formatPrice(val) {
@@ -93,7 +102,7 @@ export async function renderCheckoutAddress(container) {
                               <span class="badge badge-tag">${addr.addressType || 'Home'}</span>
                               <span class="saved-addr-phone">📱 ${addr.phone}</span>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline btn-delete-checkout-addr" data-id="${addr.id}" title="Remove Address" style="color: #ef4444; border-color: #fca5a5; padding: 2px 8px; font-size: 0.75rem;">
+                            <button type="button" class="btn btn-sm btn-outline btn-delete-checkout-addr" data-id="${addr.id}" title="Remove Address" style="color: #ef4444; border-color: #fca5a5; padding: 3px 8px; font-size: 0.75rem; white-space: nowrap; flex-shrink: 0;">
                               🗑️ Remove
                             </button>
                           </div>
@@ -206,7 +215,7 @@ export async function renderCheckoutAddress(container) {
 
                     <div class="form-group full-width" style="margin-top: 1rem;">
                       <button type="submit" class="btn btn-orange btn-lg btn-block" id="btn-save-and-proceed">
-                        Save Address & Review Order ➔
+                        Save Address
                       </button>
                     </div>
                   </form>
@@ -365,25 +374,50 @@ function attachAddressEvents(container) {
     });
   }
 
-  // Handle saved address radio clicking
-  container.querySelectorAll('.saved-addr-card').forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.btn-delete-checkout-addr')) return;
-      const addrId = card.dataset.id;
-      const addresses = state.getAddresses();
-      const selected = addresses.find(a => a.id === addrId);
-      if (selected) {
-        state.setActiveAddress(selected);
-        renderCheckoutAddress(container);
-      }
-    });
-  });
+  // Centralized action handler for "Deliver to this Address & Review Order ➔"
+  function handleDeliverToSelectedAddress(targetElement) {
+    const card = targetElement ? targetElement.closest('.saved-addr-card') : null;
+    const checkedRadio = container.querySelector('input[name="selected_addr"]:checked');
+    const selectedId = (card && card.dataset.id) || (checkedRadio && checkedRadio.value) || (state.getActiveAddress() && state.getActiveAddress().id);
 
-  // Handle address delete button
-  container.querySelectorAll('.btn-delete-checkout-addr').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+    const addresses = state.getAddresses();
+    const targetAddress = (selectedId && addresses.find(a => a.id === selectedId))
+      || state.getActiveAddress()
+      || (addresses.length > 0 ? addresses[0] : null);
+
+    if (!targetAddress) {
+      showToast('Please select or add a delivery address to proceed.', 'warning');
+      return;
+    }
+
+    // 1. Save and set address as current checkout delivery address in state / localStorage
+    state.setActiveAddress(targetAddress);
+
+    // 2. Move checkout from Step 1 "Delivery Address" to Step 2 "Order Review & Payment"
+    if (window.router) {
+      window.router.navigate('#checkout-payment');
+    } else {
+      window.location.hash = '#checkout-payment';
+    }
+  }
+
+  // Robust container-level event delegation (works across mobile, tablet, laptop & desktop)
+  container.addEventListener('click', async (e) => {
+    // 1. "Deliver to this Address & Review Order ➔" button
+    const deliverBtn = e.target.closest('.btn-deliver-here, #btn-deliver-saved');
+    if (deliverBtn) {
+      e.preventDefault();
       e.stopPropagation();
-      const addrId = btn.dataset.id;
+      handleDeliverToSelectedAddress(deliverBtn);
+      return;
+    }
+
+    // 2. Address delete button
+    const deleteBtn = e.target.closest('.btn-delete-checkout-addr');
+    if (deleteBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const addrId = deleteBtn.dataset.id;
       state.deleteAddress(addrId);
       if (auth.isAuthenticated()) {
         try {
@@ -392,17 +426,29 @@ function attachAddressEvents(container) {
       }
       showToast('Address removed.', 'info');
       renderCheckoutAddress(container);
-    });
+      return;
+    }
+
+    // 3. Saved Address Card selection (Ignore if clicked inside buttons/actions)
+    const card = e.target.closest('.saved-addr-card');
+    if (card) {
+      if (e.target.closest('button, .btn, .btn-deliver-here, #btn-deliver-saved, .btn-delete-checkout-addr')) return;
+      const addrId = card.dataset.id;
+      const addresses = state.getAddresses();
+      const selected = addresses.find(a => a.id === addrId);
+      if (selected) {
+        state.setActiveAddress(selected);
+        renderCheckoutAddress(container);
+      }
+    }
   });
 
+  // Direct element listener for deliver button if already in DOM
   if (deliverSavedBtn) {
-    deliverSavedBtn.addEventListener('click', () => {
-      const active = state.getActiveAddress();
-      if (!active) {
-        showToast('Please select a delivery address', 'warning');
-        return;
-      }
-      window.location.hash = '#checkout-payment';
+    deliverSavedBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleDeliverToSelectedAddress(deliverSavedBtn);
     });
   }
 
@@ -477,14 +523,27 @@ function attachAddressEvents(container) {
       state.setActiveAddress(savedLocal);
 
       // Save to backend if user is logged in
-      try {
-        await api.addUserAddress(addressData);
-      } catch (err) {
-        console.warn('Address saved to local session:', err);
+      if (auth.isAuthenticated()) {
+        try {
+          const res = await api.addUserAddress(addressData);
+          if (res && res.address) {
+            let localAddrs = state.getAddresses();
+            const idx = localAddrs.findIndex(a => a.id === savedLocal.id);
+            if (idx !== -1) {
+              localAddrs[idx] = res.address;
+            } else {
+              localAddrs.unshift(res.address);
+            }
+            state.setAddresses(localAddrs);
+            state.setActiveAddress(res.address);
+          }
+        } catch (err) {
+          console.warn('Address saved to local session:', err);
+        }
       }
 
-      showToast('Delivery address saved!', 'success');
-      window.location.hash = '#checkout-payment';
+      showToast('New delivery address saved and selected!', 'success');
+      renderCheckoutAddress(container);
     });
   }
 

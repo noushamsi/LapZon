@@ -1119,6 +1119,17 @@ class JsonDb {
     const db = this.readDb();
     if (!db.addresses) db.addresses = [];
     const userAddrs = db.addresses.filter(a => a.userId === userId);
+
+    // Prevent duplicate identical addresses for the same user account
+    const existing = userAddrs.find(a => 
+      String(a.phone || '').trim() === String(addressData.phone || '').trim() &&
+      String(a.houseNo || '').trim().toLowerCase() === String(addressData.houseNo || '').trim().toLowerCase() &&
+      String(a.pinCode || '').trim() === String(addressData.pinCode || '').trim()
+    );
+    if (existing) {
+      return existing;
+    }
+
     const newAddress = {
       id: `addr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       userId,
